@@ -1,8 +1,8 @@
 let amigos = [];
 let reconhecimentoDeFala;
+
 function lerTextoEmVoz(texto) {
     const synth = window.speechSynthesis;
-
 
     if (!synth) {
         alert('Seu navegador não suporta síntese de fala.');
@@ -10,11 +10,14 @@ function lerTextoEmVoz(texto) {
     }
 
     const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.voice = synth.getVoices().find(voice => voice.lang === 'pt-BR');
+    utterance.voice = synth.getVoices().find(voice => voice.lang === 'pt-BR') || null;
     utterance.rate = 1.5;
 
-
-    synth.speak(utterance);
+    if (utterance.voice) {
+        synth.speak(utterance);
+    } else {
+        console.warn('Nenhuma voz compatível encontrada.');
+    }
 }
 
 function adicionarAmigo() {
@@ -26,7 +29,7 @@ function adicionarAmigo() {
         return;
     }
 
-    const nomeValido = /^[A-Za-z\s]+$/;
+    const nomeValido = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/;
 
     if (!nomeValido.test(nome)) {
         alert('Nome inválido! Apenas letras e espaços são permitidos.');
@@ -47,28 +50,29 @@ function atualizarLista() {
     const lista = document.getElementById('listaAmigos');
     lista.innerHTML = '';
 
-    if (!Array.isArray(amigos) || amigos.length === 0) {
-        return;
-    }
+    if (!amigos.length) return;
+
+    const fragment = document.createDocumentFragment();
 
     amigos.forEach(function (amigo) {
         const item = document.createElement('li');
+        const texto = document.createElement('span');
         const lixeiraImg = document.createElement('img');
+
+        texto.textContent = amigo;
+        texto.className = 'name-item';
 
         lixeiraImg.src = 'assets/trash.png';
         lixeiraImg.alt = 'Remover';
-        lixeiraImg.style.width = '25px';
-        lixeiraImg.style.height = '26px';
-        lixeiraImg.style.cursor = 'pointer';  
+        lixeiraImg.className = 'trash-icon';
+        lixeiraImg.onclick = () => removerAmigo(amigo);
 
-        lixeiraImg.onclick = function () {
-            removerAmigo(amigo);
-        };
-
-        item.textContent = amigo;
+        item.appendChild(texto);
         item.appendChild(lixeiraImg);
-        lista.appendChild(item);
+        fragment.appendChild(item);
     });
+
+    lista.appendChild(fragment);
 }
 
 function removerAmigo(nome) {
@@ -80,30 +84,27 @@ function sortearAmigo() {
     const resultado = document.getElementById('resultado');
 
     if (amigos.length < 5) {
+        const mensagem = 'É necessário ter pelo menos 5 participantes para realizar o sorteio.';
         if (resultado) {
-            resultado.innerHTML = 'É necessário ter pelo menos 5 participantes para realizar o sorteio.';
+            resultado.innerHTML = mensagem;
             resultado.style.color = 'red';
+            lerTextoEmVoz(mensagem);
+
+            setTimeout(() => {
+                resultado.innerHTML = '';
+            }, 7000);
         }
-        console.log('Número insuficiente de participantes:', amigos.length);
         return;
     }
 
     const indiceSorteado = Math.floor(Math.random() * amigos.length);
     const amigoSorteado = amigos[indiceSorteado];
-    console.log('Índice sorteado:', indiceSorteado, 'Nome sorteado:', amigoSorteado);
 
     if (resultado) {
         resultado.innerHTML = 'O amigo sorteado foi: ' + amigoSorteado;
         resultado.style.color = 'green';
+        lerTextoEmVoz('O amigo sorteado foi ' + amigoSorteado);
     }
-    lerTextoEmVoz('O amigo sorteado foi ' + amigoSorteado);
 }
 
-function novoSorteio() {
-    amigos = [];
-    atualizarLista();
-    const resultado = document.getElementById('resultado');
-    if (resultado) {
-        resultado.innerHTML = '';
-    }
-}
+
