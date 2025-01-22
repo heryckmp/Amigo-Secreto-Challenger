@@ -1,6 +1,9 @@
 # Amigo Secreto - Sorteio Online
 
 Este é um projeto simples de "Amigo Secreto" com uma interface de usuário para adicionar amigos e realizar o sorteio. Esse projeto faz parte do  curso **Iniciante em Programação - Turma G8**, do programa **Oracle Next Education (ONE)**.
+![Exemplo de Amigo Secreto](assets/amigo-secret.png)
+
+
 
 
 ## Deploy
