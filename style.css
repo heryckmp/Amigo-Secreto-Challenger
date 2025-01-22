@@ -1,18 +1,9 @@
-:root {
-    --color-primary: #4B69FD;
-    --color-secondary: #FFF9EB;
-    --color-tertiary: #C4C4C4;
-    --color-button: #fe652b;
-    --color-button-hover: #e55720;
-    --color-text: #444444;
-    --color-white: #FFFFFF;
-}
-
-/* Estilos gerais */
+/* Melhorias no layout */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Poppins', sans-serif; /* Fonte mais moderna */
 }
 
 body {
@@ -21,13 +12,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-.main-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
+    color: var(--color-text);
 }
 
 /* Banner */
@@ -37,6 +22,8 @@ body {
     justify-content: center;
     align-items: center;
     padding: 40px 0 0;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Sombras sutis */
+    border-radius: 12px;
 }
 
 /* Seção de entrada */
@@ -50,6 +37,7 @@ body {
     align-items: center;
     padding: 20px;
     width: 100%;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Títulos */
@@ -62,101 +50,114 @@ body {
 }
 
 .section-title {
-    font-family: "Inter", serif;
+    font-family: "Inter", sans-serif;
     font-size: 36px;
     font-weight: 700;
     color: var(--color-primary);
-    margin: 10px 0;
+    margin: 20px 0;
     text-align: center;
 }
 
-/* Contêineres de entrada e botão */
-.input-wrapper {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    max-width: 600px;
-    margin-top: 20px;
-}
-
+/* Estilos de entrada de texto */
 .input-name {
     width: 100%;
-    padding: 10px;
-    border: 2px solid #000;
-    border-radius: 25px 0 0 25px;
+    padding: 15px;
+    border: 2px solid var(--color-tertiary);
+    border-radius: 30px;
     font-size: 16px;
+    margin-bottom: 10px; /* Espaçamento entre os campos */
+    transition: border-color 0.3s ease;
 }
 
-.button-container {
-    width: 300px;
-    justify-content: center;
+.input-name:focus {
+    border-color: var(--color-button); /* Cor ao focar */
 }
 
-/* Estilos de entrada de texto */
-.input-title {
-    flex: 1;
-    padding: 10px 15px;
-    font-size: 16px;
-    border: 2px solid #333;
-    border-right: none;
-    border-radius: 25px 0 0 25px;
-    font-family: "Merriweather", serif;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* Estilos de botão */
+/* Botões */
 button {
     padding: 15px 30px;
     font-family: "Inter", sans-serif;
     font-size: 16px;
-    border: 2px solid #000;
-    border-radius: 25px;
+    border: none;
+    border-radius: 30px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.3s ease;
 }
 
 .button-add {
-    background-color: var(--color-tertiary);
-    color: var(--color-text);
-    border-radius: 0 25px 25px 0;
+    background-color: var(--color-button);
+    color: var(--color-white);
 }
 
 .button-add:hover {
-    background-color: #a1a1a1;
+    background-color: var(--color-button-hover);
+    transform: scale(1.05); /* Efeito de aumento suave */
 }
 
-/* Listas */
-ul {
-    list-style-type: none;
-    color: var(--color-text);
-    font-family: "Inter", sans-serif;
-    font-size: 18px;
-    margin: 20px 0;
-}
-
-.result-list {
-    margin-top: 15px;
-    color: #05DF05;
-    font-size: 22px;
-    font-weight: bold;
-    text-align: center;
-}
-
-/* Botão de sortear título */
 .button-draw {
     display: flex;
     align-items: center;
-    width: 100%;
-    padding: 10px 40px;
-    color: var(--color-white);
+    padding: 10px 30px;
     background-color: var(--color-button);
-    font-size: 16px;
-}
-
-.button-draw img {
-    margin-right: 40px;
+    color: var(--color-white);
+    font-size: 20px;
+    border-radius: 30px;
+    transition: transform 0.2s ease, background-color 0.3s ease;
 }
 
 .button-draw:hover {
     background-color: var(--color-button-hover);
+    transform: scale(1.05);
+}
+
+button:active {
+    background-color: #e84e4e;
+    transform: scale(0.95);
+}
+
+/* Lista de amigos */
+ul {
+    list-style-type: none;
+    color: var(--color-text);
+    font-family: "Inter", sans-serif;
+    font-size: 20px;
+    margin: 20px 0;
+    padding: 0;
+}
+
+li {
+    font-weight: bold;
+    font-size: 22px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+li img {
+    cursor: pointer;
+    width: 25px;
+    height: 25px;
+    transition: transform 0.2s ease;
+}
+
+li img:hover {
+    transform: scale(1.2); /* Efeito de zoom na lixeira */
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+    }
+
+    .input-section {
+        width: 100%;
+        padding: 15px;
+    }
+
+    button {
+        padding: 10px 20px;
+    }
 }
