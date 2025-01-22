@@ -1,21 +1,19 @@
-
 let amigos = [];
 let reconhecimentoDeFala;
-
 function lerTextoEmVoz(texto) {
     const synth = window.speechSynthesis;
 
-    
+
     if (!synth) {
         alert('Seu navegador não suporta síntese de fala.');
         return;
     }
 
     const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.voice = synth.getVoices().find(voice => voice.lang === 'pt-BR'); 
-    utterance.rate = 1.5; 
+    utterance.voice = synth.getVoices().find(voice => voice.lang === 'pt-BR');
+    utterance.rate = 1.5;
 
-    
+
     synth.speak(utterance);
 }
 
@@ -55,13 +53,20 @@ function atualizarLista() {
 
     amigos.forEach(function (amigo) {
         const item = document.createElement('li');
-        const removerBtn = document.createElement('button');
-        removerBtn.textContent = 'Remover';
-        removerBtn.onclick = function () {
+        const lixeiraImg = document.createElement('img');
+
+        lixeiraImg.src = 'assets/trash.png';
+        lixeiraImg.alt = 'Remover';
+        lixeiraImg.style.width = '25px';
+        lixeiraImg.style.height = '26px';
+        lixeiraImg.style.cursor = 'pointer';  
+
+        lixeiraImg.onclick = function () {
             removerAmigo(amigo);
         };
+
         item.textContent = amigo;
-        item.appendChild(removerBtn);
+        item.appendChild(lixeiraImg);
         lista.appendChild(item);
     });
 }
@@ -102,4 +107,3 @@ function novoSorteio() {
         resultado.innerHTML = '';
     }
 }
-
