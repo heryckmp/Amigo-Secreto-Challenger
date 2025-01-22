@@ -1,6 +1,7 @@
 
 let amigos = [];
 let reconhecimentoDeFala;
+
 function lerTextoEmVoz(texto) {
     const synth = window.speechSynthesis;
 
