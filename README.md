@@ -25,8 +25,7 @@ Você pode acessar o projeto em produção através do seguinte link:
 - **Duplicidade**: Nomes já adicionados não podem ser repetidos.
 - **Quantidade mínima**: Sorteio só é permitido se houver pelo menos 5 amigos na lista.
 - **Validação de Voz**: Quando o sorteio de um amigo secreto é realizado, o nome sorteado é lido em voz alta,
-- **Validação de Voz em Alertas**: Caso o sorteio não possa ser realizado (por exemplo, se houver menos de 5 participantes), uma mensagem de alerta é lida em voz alta para reforçar a comunicação com o usuário e
-- a acessibilidade.
+- **Validação de Voz em Alertas**: Caso o sorteio não possa ser realizado (por exemplo, se houver menos de 5 participantes), uma mensagem de alerta é lida em voz alta para reforçar a comunicação com o usuário e a acessibilidade.
   
 
 
