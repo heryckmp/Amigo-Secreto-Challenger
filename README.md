@@ -2,11 +2,14 @@
 
 Este é um projeto simples de "Amigo Secreto" com uma interface de usuário para adicionar amigos e realizar o sorteio. Esse projeto faz parte do  curso **Iniciante em Programação - Turma G8**, do programa **Oracle Next Education (ONE)**.
 
+
 ## Deploy
+
 
 Você pode acessar o projeto em produção através do seguinte link:
 
 [Amigo Secreto - Sorteio Online](https://amigo-secreto-challenger.vercel.app/)
+
 
 ## Funcionalidades
 
@@ -16,6 +19,7 @@ Você pode acessar o projeto em produção através do seguinte link:
 - **Síntese de fala**: O resultado do sorteio é lido em voz alta usando a API de síntese de fala (Speech Synthesis) do navegador.
 - **Validação**: Valida a entrada para garantir que os nomes sejam válidos (somente letras e espaços) e que não se repitam.
 - **Visualizar a lista**: Exibe os nomes já adicionados.
+- 
 
 - ## Validações Implementadas
 
@@ -35,6 +39,7 @@ Você pode acessar o projeto em produção através do seguinte link:
 - **CSS3**: Estilização da interface com responsividade.
 - **JavaScript**: Lógica para adicionar/remover amigos, sortear e usar a síntese de fala.
 - **Speech Synthesis API**: Para ler em voz alta o nome do amigo sorteado.
+- 
 
 ## Como Contribuir
 
