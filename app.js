@@ -36,6 +36,12 @@ function adicionarAmigo() {
         return;
     }
 
+    
+    if (nome.length < 3) {
+        alert('O nome deve conter pelo menos 3 caracteres.');
+        return;
+    }
+
     if (amigos.some(amigo => amigo.toLowerCase() === nome.toLowerCase())) {
         alert('Esse nome já foi adicionado!');
         return;
@@ -45,6 +51,7 @@ function adicionarAmigo() {
     input.value = '';
     atualizarLista();
 }
+
 
 function atualizarLista() {
     const lista = document.getElementById('listaAmigos');
