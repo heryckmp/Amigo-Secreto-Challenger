@@ -2,10 +2,19 @@
 let amigos = ['mirela', 'lucas', 'Eric', 'Paola'];
 
 function adicionarAmigo() {
-    let input = document.getElementById('amigo');
-    let nome = input.value.trim();  //Remove espaços em branco extras para nao afetar no processamento do valor
-}
-if (nome == '') {
-    alert('Por favor, insira um nome:');
-    return;
-}
+    let input = document.getElementById('amigo'); 
+    let nome = input.value.trim();  // Remove espaços extras no começo e no final do nome inserido
+
+    
+    if (nome == '') {
+        alert('Por favor, insira um nome:'); 
+        return; // Interrompe a execução da função
+    }
+
+    
+    amigos.push(nome);
+
+    // Limpa o campo de entrada após adicionar
+    input.value = '';
+
+   console.log(amigos); 
