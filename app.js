@@ -28,8 +28,8 @@ let snowSystem;
 let clock;
 let mouse = { x: 0, y: 0 };
 
-// Tamanho original do presente (para restaurar após animações)
-const originalPresentSize = 1;
+// Tamanho original do presente (aumentado para 1.5)
+const originalPresentSize = 1.5;
 
 // Inicialização
 function init() {
@@ -163,11 +163,12 @@ function initThreeJS() {
     directionalLight.position.set(10, 10, 10);
     scene.add(directionalLight);
     
-    // Criar modelo 3D de presente
-    presentModel = new PresentModel(scene, { x: 0, y: 0, z: 0 }, originalPresentSize);
+    // Inicializar sistema de neve (aumentando quantidade para 12000)
+    // A neve deve ser iniciada primeiro para ficar atrás de outros elementos 3D
+    snowSystem = new SnowSystem(scene, 12000);
     
-    // Inicializar sistema de neve
-    snowSystem = new SnowSystem(scene, 8000);
+    // Criar modelo 3D de presente
+    presentModel = new PresentModel(scene, { x: 0, y: 0, z: 1 }, originalPresentSize);
     
     // Iniciar loop de animação
     animate();
