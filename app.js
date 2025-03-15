@@ -1,6 +1,6 @@
 // Elementos DOM
-const participantForm = document.getElementById('participant-form');
-const participantInput = document.getElementById('participant-input');
+const inputName = document.getElementById('input-name');
+const addButton = document.getElementById('add-button');
 const participantsList = document.getElementById('participants-list');
 const participantsCount = document.getElementById('participants-count');
 const drawButton = document.getElementById('draw-button');
@@ -9,7 +9,8 @@ const resultSection = document.getElementById('result-section');
 const friendName = document.getElementById('friend-name');
 const closeResultButton = document.getElementById('close-result');
 const confettiCanvas = document.getElementById('confetti-canvas');
-const canvasContainer = document.getElementById('canvas-container');
+const snowContainer = document.getElementById('snow-container');
+const presentContainer = document.getElementById('present-container');
 
 // Arrays para armazenar participantes e resultados
 let participants = [];
@@ -25,6 +26,7 @@ const colors = ['#8A2BE2', '#9370DB', '#BA55D3', '#FF69B4', '#FFD700', '#00BFFF'
 let scene, camera, renderer;
 let presentModel;
 let snowSystem;
+let snowScene, snowCamera, snowRenderer;
 let clock;
 let mouse = { x: 0, y: 0 };
 
@@ -45,19 +47,27 @@ function init() {
     confettiCanvas.height = window.innerHeight;
 
     // Event listeners
-    participantForm.addEventListener('submit', addParticipant);
+    addButton.addEventListener('click', addParticipant);
+    inputName.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addParticipant(e);
+        }
+    });
     drawButton.addEventListener('click', drawSecretFriends);
     closeResultButton.addEventListener('click', closeResultModal);
     window.addEventListener('resize', onWindowResize);
     document.addEventListener('mousemove', onMouseMove);
 
-    // Inicializar Three.js e o modelo 3D se o container existir
-    if (canvasContainer) {
-        initThreeJS();
-        createStars();
-    }
+    // Inicializar Three.js para a neve como background
+    initSnowSystem();
     
-    // Aplicar efeitos de animação aos elementos com atributo data-animation
+    // Inicializar Three.js para o presente 3D
+    initPresentModel();
+    
+    // Criar estrelas decorativas
+    createStars();
+    
+    // Aplicar efeitos de animação aos elementos
     initElementAnimations();
 }
 
@@ -134,26 +144,51 @@ function initElementAnimations() {
     });
 }
 
-// Inicializar Three.js
-function initThreeJS() {
+// Inicializar sistema de neve
+function initSnowSystem() {
     // Criar relógio para animações
     clock = new THREE.Clock();
     
-    // Configurar cena
+    // Configurar cena para a neve
+    snowScene = new THREE.Scene();
+    
+    // Configurar câmera para a neve
+    snowCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    snowCamera.position.z = 5;
+    
+    // Configurar renderizador para a neve
+    snowRenderer = new THREE.WebGLRenderer({ 
+        alpha: true,
+        antialias: true 
+    });
+    snowRenderer.setSize(window.innerWidth, window.innerHeight);
+    snowRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    snowContainer.appendChild(snowRenderer.domElement);
+    
+    // Inicializar sistema de neve (aumentando quantidade para 12000)
+    snowSystem = new SnowSystem(snowScene, 12000);
+    
+    // Iniciar loop de animação para neve
+    animateSnow();
+}
+
+// Inicializar modelo 3D de presente
+function initPresentModel() {
+    // Configurar cena para o presente
     scene = new THREE.Scene();
     
-    // Configurar câmera
+    // Configurar câmera para o presente
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
     
-    // Configurar renderizador
+    // Configurar renderizador para o presente
     renderer = new THREE.WebGLRenderer({ 
         alpha: true,
         antialias: true 
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    canvasContainer.appendChild(renderer.domElement);
+    presentContainer.appendChild(renderer.domElement);
     
     // Adicionar luzes
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -163,15 +198,11 @@ function initThreeJS() {
     directionalLight.position.set(10, 10, 10);
     scene.add(directionalLight);
     
-    // Inicializar sistema de neve (aumentando quantidade para 12000)
-    // A neve deve ser iniciada primeiro para ficar atrás de outros elementos 3D
-    snowSystem = new SnowSystem(scene, 12000);
-    
     // Criar modelo 3D de presente
     presentModel = new PresentModel(scene, { x: 0, y: 0, z: 1 }, originalPresentSize);
     
-    // Iniciar loop de animação
-    animate();
+    // Iniciar loop de animação para o presente
+    animatePresent();
 }
 
 // Movimento do mouse
@@ -186,7 +217,14 @@ function onWindowResize() {
     confettiCanvas.width = window.innerWidth;
     confettiCanvas.height = window.innerHeight;
     
-    // Atualizar Three.js se existir
+    // Atualizar Three.js para neve
+    if (snowRenderer && snowCamera) {
+        snowCamera.aspect = window.innerWidth / window.innerHeight;
+        snowCamera.updateProjectionMatrix();
+        snowRenderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    
+    // Atualizar Three.js para presente
     if (renderer && camera) {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -194,9 +232,26 @@ function onWindowResize() {
     }
 }
 
-// Loop de animação para Three.js
-function animate() {
-    requestAnimationFrame(animate);
+// Loop de animação para neve
+function animateSnow() {
+    requestAnimationFrame(animateSnow);
+    
+    const time = clock ? clock.getElapsedTime() : 0;
+    
+    // Atualizar sistema de neve
+    if (snowSystem) {
+        snowSystem.update(time);
+    }
+    
+    // Renderizar cena de neve
+    if (snowRenderer && snowScene && snowCamera) {
+        snowRenderer.render(snowScene, snowCamera);
+    }
+}
+
+// Loop de animação para presente
+function animatePresent() {
+    requestAnimationFrame(animatePresent);
     
     const time = clock ? clock.getElapsedTime() : 0;
     
@@ -209,12 +264,7 @@ function animate() {
         presentModel.present.rotation.x += mouse.y * 0.01;
     }
     
-    // Atualizar sistema de neve
-    if (snowSystem) {
-        snowSystem.update(time);
-    }
-    
-    // Renderizar cena
+    // Renderizar cena do presente
     if (renderer && scene && camera) {
         renderer.render(scene, camera);
     }
@@ -223,7 +273,7 @@ function animate() {
 // Adicionar participante
 function addParticipant(e) {
     e.preventDefault();
-    const name = participantInput.value.trim();
+    const name = inputName.value.trim();
     
     if (name === '') {
         showMessage('Por favor, digite um nome válido.', 'error');
@@ -239,8 +289,8 @@ function addParticipant(e) {
     saveParticipants();
     updateParticipantsList();
     
-    participantInput.value = '';
-    participantInput.focus();
+    inputName.value = '';
+    inputName.focus();
     
     showMessage(`${name} foi adicionado com sucesso!`, 'success');
     
@@ -319,10 +369,11 @@ function showMessage(message, type) {
     resultList.textContent = message;
     resultList.className = 'result-list glass';
     resultList.classList.add(type);
+    resultList.classList.remove('hidden');
     
     setTimeout(() => {
         resultList.textContent = '';
-        resultList.className = 'result-list glass';
+        resultList.className = 'result-list glass hidden';
     }, 3000);
 }
 
