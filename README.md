@@ -1,80 +1,93 @@
 # 🎁 Amigo Secreto
 
-Uma aplicação web moderna para sorteio de amigo secreto com design glassmorphism e animações 3D interativas.
+Um aplicativo web moderno para realizar sorteios de amigo secreto, com interface interativa, efeitos visuais 3D e design responsivo.
 
-![Amigo Secreto Preview](https://i.imgur.com/Uv7dUQH.png)
+![Amigo Secreto](https://img.shields.io/badge/Amigo_Secreto-v1.0-8A2BE2)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
+![Three.js](https://img.shields.io/badge/Three.js-000000?logo=three.js&logoColor=white)
 
-## ✨ Características
+## ✨ Recursos
 
-- **Design Moderno**: Interface com efeito glassmorphism e elementos 3D
-- **Responsivo**: Funciona perfeitamente em dispositivos móveis e desktop
-- **Animações**: Celebração interativa com confetes 3D quando um amigo é sorteado
-- **Armazenamento Local**: Salva os participantes no localStorage do navegador
-- **Algoritmo Seguro**: Garante que ninguém tire a si mesmo no sorteio
+- 🎁 **Presente 3D Interativo**: Um modelo 3D de presente que reage ao movimento do mouse.
+- ❄️ **Efeito de Neve Interativo**: Sistema de partículas 3D que reage aos movimentos do cursor.
+- 🎨 **Design Glassmorphism**: Interface moderna com efeitos de vidro.
+- 🎉 **Animações de Confete**: Celebre o resultado do sorteio com confetes animados.
+- 📱 **Responsivo**: Funciona em dispositivos móveis e desktops.
+- 💾 **Armazenamento Local**: Salva os participantes no navegador.
+- 🌟 **Animações de UI**: Elementos que aparecem com animações suaves.
 
-## 🚀 Tecnologias Utilizadas
+## 🚀 Como Usar
 
-- HTML5
-- CSS3 (com variáveis, animações e efeitos modernos)
-- JavaScript (Vanilla JS)
-- Canvas API para efeitos de confete 3D
+1. Abra a aplicação em seu navegador.
+2. Adicione os nomes dos participantes (mínimo 3).
+3. Clique no botão "Realizar Sorteio".
+4. O sistema sorteará aleatoriamente os pares para o amigo secreto.
+5. Ao mostrar cada resultado, interação com o presente 3D e efeitos visuais celebram o momento.
 
-## 🌟 Efeitos Visuais Especiais
+## 🛠️ Tecnologias Utilizadas
 
-### Glassmorphism
-A interface utiliza o efeito de glassmorphism, com elementos translúcidos que simulam vidro fosco, criando profundidade e elegância no design.
+- **HTML5**: Estrutura da aplicação.
+- **CSS3**: Estilização moderna com glassmorphism e animações.
+- **JavaScript**: Lógica da aplicação e interatividade.
+- **Three.js**: Renderização de elementos 3D (neve e presente).
+- **GSAP**: Biblioteca para animações avançadas.
+- **Intersection Observer API**: Para animações acionadas ao visualizar elementos.
 
-### Animações 3D
-- **Confete 3D**: Animação de celebração quando um amigo é sorteado
-- **Elementos flutuantes**: Efeitos sutis de flutuação para elementos principais
-- **Transições suaves**: Todas as interações têm animações de transição agradáveis
+## 🎮 Interatividade
 
-## 📱 Responsividade
+- **Presente 3D**: O presente no centro da aplicação reage ao movimento do mouse, girando suavemente. Durante eventos importantes como adicionar participantes ou realizar sorteio, o presente executa animações especiais.
 
-A aplicação é totalmente responsiva e se adapta a qualquer tamanho de tela:
+- **Sistema de Neve**: As partículas de neve reagem ao movimento do cursor, criando um efeito de "vento" que afasta os flocos. A neve serve como um background interativo que adiciona profundidade à experiência.
 
-- **Desktop**: Layout expandido com elementos maiores
-- **Tablet**: Layout ajustado para telas médias
-- **Mobile**: Experiência otimizada para smartphones
+- **Elementos UI**: Botões e elementos da interface utilizam efeitos glassmorphism que reagem a interações do usuário com animações sutis de hover e clique.
 
-## 🎮 Como Usar
+## 🔧 Personalização
 
-1. Adicione os nomes dos participantes usando o formulário
-2. Quando todos estiverem adicionados (mínimo 3 pessoas), clique em "Realizar Sorteio"
-3. O sistema fará o sorteio aleatório garantindo que ninguém tire a si mesmo
-4. Uma animação de confete 3D celebrará o resultado!
+Você pode personalizar vários aspectos da aplicação:
 
-## 💾 Armazenamento
+### Cores e Temas
 
-Os participantes são salvos no localStorage do navegador, então você pode fechar a página e retornar mais tarde, e seus dados estarão preservados.
+As variáveis CSS no arquivo `style.css` permitem alterar facilmente o esquema de cores:
 
-## 🛠️ Instalação e Execução
+```css
+:root {
+    /* Cores principais */
+    --color-primary: #8A2BE2;
+    --color-secondary: #9370DB;
+    --color-accent: #BA55D3;
+    --color-background: #13111A;
+    --color-background-gradient: #1E1931;
+    --color-text: #FFFFFF;
+    /* ... outras variáveis ... */
+}
+```
 
-1. Clone este repositório:
-   ```
-   git clone https://github.com/heryckmp/Amigo-Secreto-Challenger.git
-   ```
+### Sistema de Neve
 
-2. Abra o arquivo `index.html` em seu navegador preferido
+Para ajustar o sistema de neve, modifique parâmetros no arquivo `snow-system.js`:
 
-3. Alternativa: Use um servidor local como Live Server do VS Code para executar o projeto
+- Aumente ou diminua a quantidade de partículas ajustando o parâmetro `amount` no construtor.
+- Altere a interatividade modificando os valores de `mouseStrength`.
+- Mude o tamanho das partículas através do atributo `sizes` na inicialização.
 
-## 🎨 Personalização
+### Modelo 3D
 
-Você pode personalizar facilmente este projeto:
+Para personalizar o presente 3D, edite o arquivo `present-model.js`:
 
-- Modifique as cores no arquivo `style.css` nas variáveis CSS
-- Altere as animações ajustando os parâmetros nas funções de confete em `app.js`
-- Adicione novas funcionalidades conforme necessário
+- Altere as cores do presente e da fita modificando os materiais.
+- Ajuste o tamanho base definindo um valor diferente para `originalPresentSize`.
+- Modifique a velocidade de rotação na função de animação.
 
-## 🤝 Contribuição
+## 👥 Contribuições
 
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests com melhorias.
+Contribuições são bem-vindas! Sinta-se à vontade para:
 
-## 📄 Licença
+- Reportar bugs
+- Sugerir novas funcionalidades
+- Enviar pull requests
 
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+## 📝 Licença
 
----
-
-Desenvolvido com ❤️ por [Heryck Moreira](https://github.com/heryckmp)
+Este projeto está licenciado sob a MIT License.
