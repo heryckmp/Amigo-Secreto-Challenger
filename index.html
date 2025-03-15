@@ -1,99 +1,115 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <title>Amigo Secreto - Sorteio Online</title>
+    <meta name="description" content="Sistema de sorteio de amigo secreto online, gratuito e fácil de usar.">
+    
+    <!-- Fontes do Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>Amigo Secreto</title>
-    <meta name="description" content="Aplicação para sorteio de amigo secreto online">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Three.js Core -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="style.css">
     
-    <!-- GSAP para animações -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+    <!-- Estilos para Animation.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
-
 <body>
+    <!-- Background Animado -->
     <div class="background">
         <div class="bg-animation"></div>
     </div>
-
-    <!-- Container 3D -->
-    <div id="canvas-container" class="canvas-container"></div>
-
-    <main class="main-content">
+    
+    <!-- Container para o Canvas Three.js (neve) -->
+    <div id="snow-container" class="canvas-container"></div>
+    
+    <!-- Container para o Canvas Three.js (presente 3D) -->
+    <div id="present-container" class="canvas-container"></div>
+    
+    <!-- Canvas para o Confetti -->
+    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+    
+    <!-- Container Principal -->
+    <div class="main-content">
+        <!-- Cabeçalho e Banner -->
         <header class="header-banner">
-            <h1 class="main-title" data-text="Amigo Secreto" data-animation="flipIn">Amigo Secreto</h1>
-            <div class="decoration-stars" data-parallax="true" data-parallax-intensity="0.2" data-parallax-direction="up"></div>
+            <h1 class="main-title" data-text="Amigo Secreto">Amigo Secreto</h1>
+            <div class="decoration-stars"></div>
+            <div class="decoration-element circle"></div>
+            <div class="decoration-element triangle"></div>
+            <div class="decoration-element square"></div>
         </header>
         
-        <section class="input-section glass" data-animation="fadeUp">
-            <h2 class="section-title" data-animation="fadeUp" data-delay="0.2">Digite o nome dos participantes</h2>
+        <!-- Seção de Entrada -->
+        <section class="input-section glass">
+            <h2 class="section-title">Adicione os Participantes</h2>
             
-            <form id="participant-form" class="input-wrapper">
-                <input type="text" id="participant-input" class="input-name" placeholder="Digite um nome" aria-label="Nome do participante">
-                <button type="submit" class="glass-button" aria-label="Adicionar participante">
-                    <span class="button-text">Adicionar</span>
+            <div class="input-wrapper">
+                <input type="text" id="input-name" class="input-name" placeholder="Digite o nome do participante..." autocomplete="off">
+                <button id="add-button" class="glass-button">
+                    <div class="button-inner">
+                        <span class="button-text">Adicionar</span>
+                    </div>
                 </button>
-            </form>
+            </div>
             
+            <!-- Lista de Participantes -->
             <div class="list-container">
                 <div class="list-header">
-                    <h3 class="list-title" data-animation="fadeLeft" data-delay="0.3">Participantes</h3>
-                    <span class="participants-count" id="participants-count" data-animation="scale" data-delay="0.4">0</span>
+                    <h3 class="list-title">Lista de Participantes</h3>
+                    <span id="participants-count" class="participants-count">0</span>
                 </div>
-                <ul id="participants-list" class="glass-list" aria-labelledby="lista-titulo" role="list">
-                    <!-- Lista de participantes adicionados será exibida aqui -->
-                </ul>
-                <p id="lista-titulo" class="visually-hidden">Lista de participantes adicionados</p>
+                <ul id="participants-list" class="glass-list"></ul>
             </div>
             
-            <div id="result-list" class="result-list glass" aria-live="polite" role="status">
-                <!-- Mensagens de feedback serão exibidas aqui -->
-            </div>
-
+            <!-- Botão de Sortear -->
             <div class="button-container">
-                <button id="draw-button" class="button-draw glass-button" aria-label="Sortear amigo secreto" disabled data-animation="fadeUp" data-delay="0.5">
+                <button id="draw-button" class="glass-button button-draw" disabled>
                     <div class="button-inner">
-                        <img src="https://cdn-icons-png.flaticon.com/512/5058/5058379.png" alt="" aria-hidden="true">
                         <span class="button-text">Realizar Sorteio</span>
                     </div>
                 </button>
             </div>
+            
+            <!-- Resultado do Sorteio (lista de pares) -->
+            <div id="result-list" class="result-list hidden"></div>
         </section>
-
-        <!-- Elementos decorativos com parallax -->
-        <div class="decoration-element circle" data-parallax="true" data-parallax-intensity="0.15" data-parallax-direction="left"></div>
-        <div class="decoration-element triangle" data-parallax="true" data-parallax-intensity="0.2" data-parallax-direction="right"></div>
-        <div class="decoration-element square" data-parallax="true" data-parallax-intensity="0.1" data-parallax-direction="up"></div>
-
-        <!-- Seção de resultado do sorteio, inicialmente oculta -->
-        <section id="result-section" class="result-section">
-            <div class="result-content glass">
-                <h2 class="result-title" data-animation="fadeUp">Seu Amigo Secreto é:</h2>
-                <div class="friend-card">
-                    <div class="friend-avatar">
-                        <div class="avatar-circle"></div>
-                    </div>
-                    <h3 class="friend-name" id="friend-name"></h3>
+    </div>
+    
+    <!-- Overlay do Resultado (quando sorteado) -->
+    <div id="result-section" class="result-section">
+        <div class="result-content glass">
+            <h2 class="result-title">Seu Amigo Secreto é:</h2>
+            
+            <div class="friend-card">
+                <div class="friend-avatar">
+                    <div class="avatar-circle"></div>
                 </div>
-                <button id="close-result" class="close-button glass-button">Fechar</button>
+                <div id="friend-name" class="friend-name"></div>
             </div>
-        </section>
-    </main>
-
-    <!-- Canvas para confetes -->
-    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
-
+            
+            <button id="close-result" class="glass-button close-button">
+                <div class="button-inner">
+                    <span class="button-text">Fechar</span>
+                </div>
+            </button>
+        </div>
+    </div>
+    
     <!-- Scripts -->
+    <!-- Three.js para animações 3D -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.0/examples/js/loaders/GLTFLoader.min.js"></script>
+    
+    <!-- GSAP para animações -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    
+    <!-- Scripts da aplicação -->
     <script src="present-model.js"></script>
     <script src="snow-system.js"></script>
-    <script src="animations.js"></script>
-    <script src="parallax.js"></script>
-    <script src="app.js" defer></script>
+    <script src="app.js"></script>
 </body>
 </html>
