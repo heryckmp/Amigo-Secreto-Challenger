@@ -27,6 +27,9 @@ let presentModel;
 let clock;
 let mouse = { x: 0, y: 0 };
 
+// Tamanho original do presente (para restaurar após animações)
+const originalPresentSize = 1;
+
 // Inicialização
 function init() {
     // Verificar se existem participantes salvos no localStorage
@@ -134,7 +137,7 @@ function initThreeJS() {
     scene.add(directionalLight);
     
     // Criar modelo 3D de presente
-    presentModel = new PresentModel(scene, { x: 0, y: 0, z: 0 }, 2);
+    presentModel = new PresentModel(scene, { x: 0, y: 0, z: 0 }, originalPresentSize);
     
     // Iniciar loop de animação
     animate();
@@ -209,7 +212,7 @@ function addParticipant(e) {
     if (presentModel) {
         // Adicionar uma pequena animação de "pulo"
         gsap.to(presentModel.present.position, {
-            y: 1,
+            y: 0.5,
             duration: 0.3,
             ease: 'power2.out',
             onComplete: () => {
@@ -245,7 +248,7 @@ function updateParticipantsList() {
         nameSpan.classList.add('name-item');
         
         const deleteButton = document.createElement('img');
-        deleteButton.src = 'https://img.icons8.com/ios-glyphs/30/ffffff/trash--v1.png';
+        deleteButton.src = 'https://cdn-icons-png.flaticon.com/512/5058/5058192.png';
         deleteButton.alt = 'Remover';
         deleteButton.classList.add('trash-icon');
         deleteButton.onclick = () => removeParticipant(index);
@@ -339,18 +342,27 @@ function drawSecretFriends() {
     
     // Animar o modelo 3D para "celebrar" o sorteio
     if (presentModel) {
-        // Animação especial para o sorteio
-        gsap.to(presentModel.present.scale, {
-            x: 3, y: 3, z: 3,
+        // Animação especial para o sorteio - aumentar e depois voltar ao tamanho original
+        const celebrationScale = originalPresentSize * 3;  // Tamanho temporário para celebração
+        
+        // Sequência de animação usando GSAP Timeline
+        const tl = gsap.timeline();
+        
+        // Primeiro aumenta
+        tl.to(presentModel.present.scale, {
+            x: celebrationScale, 
+            y: celebrationScale, 
+            z: celebrationScale,
             duration: 0.5,
-            ease: 'power2.out',
-            onComplete: () => {
-                gsap.to(presentModel.present.scale, {
-                    x: 2, y: 2, z: 2,
-                    duration: 0.8,
-                    ease: 'elastic.out(1, 0.3)'
-                });
-            }
+            ease: 'power2.out'
+        })
+        // Depois volta ao tamanho original com efeito elástico
+        .to(presentModel.present.scale, {
+            x: originalPresentSize, 
+            y: originalPresentSize, 
+            z: originalPresentSize,
+            duration: 0.8,
+            ease: 'elastic.out(1, 0.3)'
         });
         
         // Aumentar a velocidade de rotação temporariamente
