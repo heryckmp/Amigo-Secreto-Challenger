@@ -1,67 +1,80 @@
-# Amigo Secreto - Sorteio Online
+# 🎁 Amigo Secreto
 
-Este é um projeto de "Amigo Secreto" com uma interface de usuário moderna para adicionar amigos e realizar o sorteio. Esse projeto faz parte do curso **Iniciante em Programação - Turma G8**, do programa **Oracle Next Education (ONE)**.
+Uma aplicação web moderna para sorteio de amigo secreto com design glassmorphism e animações 3D interativas.
 
-![Exemplo de Amigo Secreto](assets/amigo-secret.png)
+![Amigo Secreto Preview](https://i.imgur.com/Uv7dUQH.png)
 
-## Deploy
+## ✨ Características
 
-Você pode acessar o projeto em produção através do seguinte link:
+- **Design Moderno**: Interface com efeito glassmorphism e elementos 3D
+- **Responsivo**: Funciona perfeitamente em dispositivos móveis e desktop
+- **Animações**: Celebração interativa com confetes 3D quando um amigo é sorteado
+- **Armazenamento Local**: Salva os participantes no localStorage do navegador
+- **Algoritmo Seguro**: Garante que ninguém tire a si mesmo no sorteio
 
-[Amigo Secreto - Sorteio Online](https://amigo-secreto-challenger.vercel.app/)
+## 🚀 Tecnologias Utilizadas
 
-## Funcionalidades
+- HTML5
+- CSS3 (com variáveis, animações e efeitos modernos)
+- JavaScript (Vanilla JS)
+- Canvas API para efeitos de confete 3D
 
-- **Adicionar amigos**: Permite que você adicione o nome dos participantes
-- **Remover amigos**: Você pode remover amigos da lista de participantes antes de realizar o sorteio
-- **Sortear amigo secreto**: Realiza o sorteio com uma animação visual e exibe o nome do amigo sorteado
-- **Síntese de fala**: O resultado do sorteio é lido em voz alta usando a API de síntese de fala do navegador
-- **Validação**: Valida a entrada para garantir que os nomes sejam válidos e que não se repitam
-- **Design responsivo**: Interface adaptável para diversos tamanhos de tela
-- **Acessibilidade**: Elementos interativos com suporte a navegação por teclado e leitores de tela
+## 🌟 Efeitos Visuais Especiais
 
-## Validações Implementadas
+### Glassmorphism
+A interface utiliza o efeito de glassmorphism, com elementos translúcidos que simulam vidro fosco, criando profundidade e elegância no design.
 
-- **Campo vazio**: Impede a adição de nomes em branco
-- **Tamanho mínimo**: O nome deve conter pelo menos 3 caracteres
-- **Validação de caracteres**: Utiliza expressão regular para permitir apenas caracteres alfabéticos e espaços
-- **Duplicidade**: Nomes já adicionados não podem ser repetidos
-- **Quantidade mínima**: Sorteio só é permitido se houver pelo menos 5 amigos na lista
-- **Feedback visual e sonoro**: Mensagens de sucesso ou erro são destacadas visualmente e lidas em voz alta
+### Animações 3D
+- **Confete 3D**: Animação de celebração quando um amigo é sorteado
+- **Elementos flutuantes**: Efeitos sutis de flutuação para elementos principais
+- **Transições suaves**: Todas as interações têm animações de transição agradáveis
 
-## Melhorias Recentes
+## 📱 Responsividade
 
-- **Interface moderna**: Design atualizado com animações suaves e transições
-- **Animação de sorteio**: Efeito visual durante o sorteio para melhor experiência
-- **Responsividade aprimorada**: Adaptação perfeita para dispositivos móveis, tablets e desktops
-- **Acessibilidade**: Melhorias na navegação por teclado e compatibilidade com leitores de tela
-- **Feedback ao usuário**: Mensagens claras de sucesso e erro com feedback visual e sonoro
-- **Performance**: Código otimizado para carregar rapidamente e funcionar em diversos dispositivos
+A aplicação é totalmente responsiva e se adapta a qualquer tamanho de tela:
 
-## Tecnologias Utilizadas
+- **Desktop**: Layout expandido com elementos maiores
+- **Tablet**: Layout ajustado para telas médias
+- **Mobile**: Experiência otimizada para smartphones
 
-- **HTML5**: Estrutura semântica da página
-- **CSS3**: Estilização moderna com:
-  - Variáveis CSS para consistência visual
-  - Flexbox para layouts responsivos
-  - Animações e transições para uma experiência interativa
-  - Media queries para responsividade
-- **JavaScript**: Lógica para adicionar/remover amigos, sortear e usar a síntese de fala
-- **Web APIs**:
-  - Speech Synthesis API para feedback por voz
-  - DOM API para manipulação dinâmica do conteúdo
+## 🎮 Como Usar
 
-## Como Contribuir
+1. Adicione os nomes dos participantes usando o formulário
+2. Quando todos estiverem adicionados (mínimo 3 pessoas), clique em "Realizar Sorteio"
+3. O sistema fará o sorteio aleatório garantindo que ninguém tire a si mesmo
+4. Uma animação de confete 3D celebrará o resultado!
 
-1. **Fork** este repositório
-2. Crie uma branch para suas alterações (`git checkout -b nome-da-branch`)
-3. Faça suas alterações e adicione testes, se necessário
-4. Envie suas alterações (`git push origin nome-da-branch`)
-5. Abra um **pull request** explicando suas alterações
+## 💾 Armazenamento
 
-## Próximos Passos
+Os participantes são salvos no localStorage do navegador, então você pode fechar a página e retornar mais tarde, e seus dados estarão preservados.
 
-- Implementar um modo escuro/claro
-- Adicionar opção para exportar a lista de sorteios
-- Criar grupos de amigo secreto para gerenciar múltiplos sorteios
-- Adicionar persistência local para salvar listas de participantes
+## 🛠️ Instalação e Execução
+
+1. Clone este repositório:
+   ```
+   git clone https://github.com/heryckmp/Amigo-Secreto-Challenger.git
+   ```
+
+2. Abra o arquivo `index.html` em seu navegador preferido
+
+3. Alternativa: Use um servidor local como Live Server do VS Code para executar o projeto
+
+## 🎨 Personalização
+
+Você pode personalizar facilmente este projeto:
+
+- Modifique as cores no arquivo `style.css` nas variáveis CSS
+- Altere as animações ajustando os parâmetros nas funções de confete em `app.js`
+- Adicione novas funcionalidades conforme necessário
+
+## 🤝 Contribuição
+
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests com melhorias.
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+
+---
+
+Desenvolvido com ❤️ por [Heryck Moreira](https://github.com/heryckmp)
