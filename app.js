@@ -24,6 +24,7 @@ const colors = ['#8A2BE2', '#9370DB', '#BA55D3', '#FF69B4', '#FFD700', '#00BFFF'
 // Variáveis para Three.js
 let scene, camera, renderer;
 let presentModel;
+let snowSystem;
 let clock;
 let mouse = { x: 0, y: 0 };
 
@@ -53,10 +54,36 @@ function init() {
     // Inicializar Three.js e o modelo 3D se o container existir
     if (canvasContainer) {
         initThreeJS();
+        createStars();
     }
     
     // Aplicar efeitos de animação aos elementos com atributo data-animation
     initElementAnimations();
+}
+
+// Criar estrelas no background
+function createStars() {
+    const starsContainer = document.querySelector('.background');
+    const numberOfStars = 80;
+    
+    for (let i = 0; i < numberOfStars; i++) {
+        const star = document.createElement('div');
+        star.classList.add('star');
+        
+        // Posições aleatórias
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.left = `${Math.random() * 100}%`;
+        
+        // Tamanhos variados
+        const size = Math.random() * 3 + 1;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        
+        // Atraso na animação para que não pisquem todas juntas
+        star.style.animationDelay = `${Math.random() * 5}s`;
+        
+        starsContainer.appendChild(star);
+    }
 }
 
 // Inicializar animações para elementos
@@ -139,6 +166,9 @@ function initThreeJS() {
     // Criar modelo 3D de presente
     presentModel = new PresentModel(scene, { x: 0, y: 0, z: 0 }, originalPresentSize);
     
+    // Inicializar sistema de neve
+    snowSystem = new SnowSystem(scene, 8000);
+    
     // Iniciar loop de animação
     animate();
 }
@@ -176,6 +206,11 @@ function animate() {
         // Adicionar movimento suave em resposta ao mouse
         presentModel.present.rotation.y += mouse.x * 0.01;
         presentModel.present.rotation.x += mouse.y * 0.01;
+    }
+    
+    // Atualizar sistema de neve
+    if (snowSystem) {
+        snowSystem.update(time);
     }
     
     // Renderizar cena
