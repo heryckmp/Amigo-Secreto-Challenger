@@ -1,10 +1,11 @@
 /**
  * Sistema de Neve 3D Interativa
  * Implementado com Three.js usando shaders para melhor performance
+ * Serve como background principal da aplicação
  */
 
 class SnowSystem {
-    constructor(scene, amount = 5000) {
+    constructor(scene, amount = 10000) {
         this.scene = scene;
         this.amount = amount;
         this.particleSystem = null;
@@ -16,9 +17,9 @@ class SnowSystem {
         this.snowflakeTexture = null;
         
         // Variáveis de configuração da neve
-        this.width = 100;
-        this.height = 100;
-        this.depth = 100;
+        this.width = 200;  // Aumentado para cobrir mais da tela
+        this.height = 200;
+        this.depth = 200;
         
         // Inicializar o sistema
         this.init();
@@ -42,30 +43,35 @@ class SnowSystem {
         const positions = new Float32Array(this.amount * 3);
         const velocities = new Float32Array(this.amount * 3);
         const sizes = new Float32Array(this.amount);
+        const opacities = new Float32Array(this.amount);
         
         // Inicializar valores aleatórios para cada partícula
         for (let i = 0; i < this.amount; i++) {
             // Índice do array para os valores x, y, z
             const i3 = i * 3;
             
-            // Posição aleatória
+            // Posição aleatória em um volume maior para cobrir toda a tela
             positions[i3] = (Math.random() * 2 - 1) * this.width;  // x
-            positions[i3 + 1] = (Math.random() * 2) * this.height; // y (começando de cima)
+            positions[i3 + 1] = (Math.random() * 2 - 1) * this.height; // y
             positions[i3 + 2] = (Math.random() * 2 - 1) * this.depth; // z
             
             // Velocidade aleatória (principalmente para baixo)
-            velocities[i3] = (Math.random() * 2 - 1) * 0.05;   // x (leve drift)
-            velocities[i3 + 1] = -(Math.random() * 0.3 + 0.1); // y (queda)
-            velocities[i3 + 2] = (Math.random() * 2 - 1) * 0.05; // z (leve drift)
+            velocities[i3] = (Math.random() * 2 - 1) * 0.08;   // x (leve drift)
+            velocities[i3 + 1] = -(Math.random() * 0.4 + 0.2); // y (queda)
+            velocities[i3 + 2] = (Math.random() * 2 - 1) * 0.08; // z (leve drift)
             
             // Tamanho aleatório
-            sizes[i] = Math.random() * 4 + 1;
+            sizes[i] = Math.random() * 5 + 2;
+            
+            // Opacidade variável para criar profundidade
+            opacities[i] = Math.random() * 0.7 + 0.3;
         }
         
         // Adicionar atributos à geometria
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
         geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        geometry.setAttribute('opacity', new THREE.BufferAttribute(opacities, 1));
         
         // Criar shader material para melhor controle e performance
         const material = new THREE.ShaderMaterial({
@@ -73,57 +79,73 @@ class SnowSystem {
                 texture: { value: this.snowflakeTexture },
                 time: { value: 0 },
                 mouseX: { value: 0 },
-                mouseY: { value: 0 }
+                mouseY: { value: 0 },
+                mouseStrength: { value: 1.0 } // Força do efeito do mouse
             },
             vertexShader: `
                 attribute float size;
+                attribute float opacity;
                 attribute vec3 velocity;
                 uniform float time;
                 uniform float mouseX;
                 uniform float mouseY;
+                uniform float mouseStrength;
+                
+                varying float vOpacity;
                 
                 void main() {
+                    // Passar opacidade para o fragment shader
+                    vOpacity = opacity;
+                    
                     // Posição original
                     vec3 pos = position;
                     
-                    // Aplicar velocidade e gravidade
-                    pos.y += velocity.y * time;
+                    // Aplicar velocidade com base no tempo
+                    pos.y = mod(pos.y - velocity.y * time * 15.0, 200.0) - 100.0;
+                    pos.x = mod(pos.x + velocity.x * time * 8.0, 200.0) - 100.0;
+                    pos.z = mod(pos.z + velocity.z * time * 8.0, 200.0) - 100.0;
                     
                     // Fazer as partículas caírem em movimento de onda
-                    float wave = sin(time * 0.3 + pos.x * 0.02) * 0.5;
-                    pos.x += wave + velocity.x * time;
-                    pos.z += velocity.z * time;
+                    float waveX = sin(time * 0.4 + pos.x * 0.03) * 2.0;
+                    float waveZ = cos(time * 0.4 + pos.z * 0.03) * 2.0;
+                    pos.x += waveX;
+                    pos.z += waveZ;
                     
-                    // Interação com o mouse - cria um campo de força sutil
-                    float mouseEffect = 1.0 - min(1.0, length(vec2(pos.x - mouseX, pos.z - mouseY)) / 30.0);
-                    pos.y += mouseEffect * 0.2 * sin(time);
+                    // Efeito de vento
+                    pos.x += sin(time * 0.2) * 3.0;
                     
-                    // Reiniciar partículas quando chegam ao fundo
-                    if (pos.y < -50.0) {
-                        pos.y = 50.0;
-                        pos.x = (random(vec2(pos.x, time)) * 2.0 - 1.0) * 50.0;
-                        pos.z = (random(vec2(pos.z, time)) * 2.0 - 1.0) * 50.0;
+                    // Interação com o mouse - cria um campo de força mais forte
+                    float dist = length(vec2(pos.x - mouseX, pos.z - mouseY));
+                    float mouseEffect = 8.0 / (1.0 + dist * 0.05);
+                    vec2 mouseDir = normalize(vec2(pos.x - mouseX, pos.z - mouseY));
+                    
+                    // Aplicar efeito do mouse apenas se estiver próximo o suficiente
+                    if (dist < 60.0) {
+                        pos.x += mouseDir.x * mouseEffect * mouseStrength * 0.2;
+                        pos.z += mouseDir.y * mouseEffect * mouseStrength * 0.2;
                     }
                     
-                    // Definir tamanho da partícula
+                    // Definir tamanho da partícula com base na profundidade
                     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                    gl_PointSize = size * (300.0 / -mvPosition.z);
+                    float depth = 1.0 + (mvPosition.z / 100.0);
+                    gl_PointSize = size * (300.0 / -mvPosition.z) * depth;
                     gl_Position = projectionMatrix * mvPosition;
-                }
-                
-                // Função auxiliar para gerar números pseudoaleatórios no shader
-                float random(vec2 st) {
-                    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
                 }
             `,
             fragmentShader: `
                 uniform sampler2D texture;
+                varying float vOpacity;
                 
                 void main() {
                     vec4 texColor = texture2D(texture, gl_PointCoord);
                     
+                    // Aplicar opacidade variável
+                    texColor.a *= vOpacity;
+                    
                     // Adicionar brilho (branco no centro)
-                    texColor.rgb += pow(1.0 - length(gl_PointCoord - vec2(0.5)), 3.0) * 0.2;
+                    texColor.rgb += pow(1.0 - length(gl_PointCoord - vec2(0.5)), 5.0) * 0.3;
+                    
+                    if (texColor.a < 0.1) discard;
                     
                     gl_FragColor = texColor;
                 }
@@ -135,6 +157,7 @@ class SnowSystem {
         
         // Criar sistema de partículas
         this.particles = new THREE.Points(geometry, material);
+        this.particles.position.z = -100; // Posicionar mais ao fundo
         this.scene.add(this.particles);
     }
     
@@ -148,6 +171,10 @@ class SnowSystem {
         this.particles.material.uniforms.time.value = time;
         this.particles.material.uniforms.mouseX.value = this.mouseX;
         this.particles.material.uniforms.mouseY.value = this.mouseY;
+        
+        // Animar força da interação do mouse
+        const pulseStrength = 0.8 + Math.sin(time * 2) * 0.2;
+        this.particles.material.uniforms.mouseStrength.value = pulseStrength;
     }
     
     /**
@@ -155,15 +182,19 @@ class SnowSystem {
      */
     onMouseMove(event) {
         // Converter posição do mouse para coordenadas do espaço 3D (-1 a 1)
-        this.mouseX = (event.clientX / window.innerWidth) * 100 - 50;
-        this.mouseY = -(event.clientY / window.innerHeight) * 100 + 50;
+        this.mouseX = (event.clientX / window.innerWidth * 2 - 1) * 100;
+        this.mouseY = -(event.clientY / window.innerHeight * 2 - 1) * 50;
     }
     
     /**
      * Redimensiona o sistema para o novo tamanho da tela
      */
-    resize() {
-        // Ajustar dimensões se necessário
+    resize(width, height) {
+        if (this.particles && this.particles.material.uniforms) {
+            // Ajustar dimensões se necessário
+            this.width = width || 200;
+            this.height = height || 200;
+        }
     }
     
     /**
