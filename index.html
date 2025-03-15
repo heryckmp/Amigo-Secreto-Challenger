@@ -9,6 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <title>Amigo Secreto</title>
     <meta name="description" content="Aplicação para sorteio de amigo secreto online">
+    
+    <!-- Three.js Core -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+    
+    <!-- GSAP para animações -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
 </head>
 
 <body>
@@ -16,17 +22,17 @@
         <div class="bg-animation"></div>
     </div>
 
+    <!-- Container 3D -->
+    <div id="canvas-container" class="canvas-container"></div>
+
     <main class="main-content">
         <header class="header-banner">
-            <h1 class="main-title" data-text="Amigo Secreto">Amigo Secreto</h1>
-            <div class="gift-box">
-                <img src="https://cdn-icons-png.flaticon.com/512/3350/3350554.png" alt="Imagem representativa de presente de amigo secreto" width="150" height="150">
-                <div class="gift-shadow"></div>
-            </div>
+            <h1 class="main-title" data-text="Amigo Secreto" data-animation="flipIn">Amigo Secreto</h1>
+            <div class="decoration-stars" data-parallax="true" data-parallax-intensity="0.2" data-parallax-direction="up"></div>
         </header>
         
-        <section class="input-section glass">
-            <h2 class="section-title">Digite o nome dos participantes</h2>
+        <section class="input-section glass" data-animation="fadeUp">
+            <h2 class="section-title" data-animation="fadeUp" data-delay="0.2">Digite o nome dos participantes</h2>
             
             <form id="participant-form" class="input-wrapper">
                 <input type="text" id="participant-input" class="input-name" placeholder="Digite um nome" aria-label="Nome do participante">
@@ -37,8 +43,8 @@
             
             <div class="list-container">
                 <div class="list-header">
-                    <h3 class="list-title">Participantes</h3>
-                    <span class="participants-count" id="participants-count">0</span>
+                    <h3 class="list-title" data-animation="fadeLeft" data-delay="0.3">Participantes</h3>
+                    <span class="participants-count" id="participants-count" data-animation="scale" data-delay="0.4">0</span>
                 </div>
                 <ul id="participants-list" class="glass-list" aria-labelledby="lista-titulo" role="list">
                     <!-- Lista de participantes adicionados será exibida aqui -->
@@ -51,7 +57,7 @@
             </div>
 
             <div class="button-container">
-                <button id="draw-button" class="button-draw glass-button" aria-label="Sortear amigo secreto" disabled>
+                <button id="draw-button" class="button-draw glass-button" aria-label="Sortear amigo secreto" disabled data-animation="fadeUp" data-delay="0.5">
                     <div class="button-inner">
                         <img src="https://cdn-icons-png.flaticon.com/512/5058/5058379.png" alt="" aria-hidden="true">
                         <span class="button-text">Realizar Sorteio</span>
@@ -60,10 +66,15 @@
             </div>
         </section>
 
+        <!-- Elementos decorativos com parallax -->
+        <div class="decoration-element circle" data-parallax="true" data-parallax-intensity="0.15" data-parallax-direction="left"></div>
+        <div class="decoration-element triangle" data-parallax="true" data-parallax-intensity="0.2" data-parallax-direction="right"></div>
+        <div class="decoration-element square" data-parallax="true" data-parallax-intensity="0.1" data-parallax-direction="up"></div>
+
         <!-- Seção de resultado do sorteio, inicialmente oculta -->
         <section id="result-section" class="result-section">
             <div class="result-content glass">
-                <h2 class="result-title">Seu Amigo Secreto é:</h2>
+                <h2 class="result-title" data-animation="fadeUp">Seu Amigo Secreto é:</h2>
                 <div class="friend-card">
                     <div class="friend-avatar">
                         <div class="avatar-circle"></div>
@@ -78,6 +89,10 @@
     <!-- Canvas para confetes -->
     <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
 
+    <!-- Scripts -->
+    <script src="present-model.js"></script>
+    <script src="animations.js"></script>
+    <script src="parallax.js"></script>
     <script src="app.js" defer></script>
 </body>
 </html>
