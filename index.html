@@ -6,30 +6,42 @@
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;400;700;900&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
     <title>Amigo Secreto</title>
+    <meta name="description" content="Aplicação para sorteio de amigo secreto online">
 </head>
 
 <body>
     <main class="main-content">
         <header class="header-banner">
             <h1 class="main-title">Amigo Secreto</h1>
-            <img src="assets/amigo-secreto.png" alt="Imagem representativa de amigo secreto">
+            <img src="assets/amigo-secreto.png" alt="Imagem representativa de amigo secreto" width="150" height="150">
         </header>
         
         <section class="input-section">
-            <h2 class="section-title">Digite o nome dos seus amigos</h2>
+            <h2 class="section-title">Digite o nome dos participantes</h2>
+            
             <div class="input-wrapper">
-                <input type="text" id="amigo" class="input-name" placeholder="Digite um nome">
-                <button class="button-add" onclick="adicionarAmigo()">Adicionar</button>
+                <input type="text" id="amigo" class="input-name" placeholder="Digite um nome" aria-label="Nome do participante">
+                <button class="button-add" onclick="adicionarAmigo()" aria-label="Adicionar participante">
+                    Adicionar
+                </button>
             </div>
-           
-            <ul id="listaAmigos" class="name-list" aria-labelledby="listaAmigos" role="list"></ul>
-            <ul id="resultado" class="result-list" aria-live="polite"></ul>
+            
+            <div class="list-container">
+                <ul id="listaAmigos" class="name-list" aria-labelledby="lista-titulo" role="list">
+                    <!-- Lista de amigos adicionados será exibida aqui -->
+                </ul>
+                <p id="lista-titulo" class="visually-hidden">Lista de participantes adicionados</p>
+            </div>
+            
+            <div id="resultado" class="result-list" aria-live="polite" role="status">
+                <!-- Resultado do sorteio será exibido aqui -->
+            </div>
 
             <div class="button-container">
                 <button class="button-draw" onclick="sortearAmigo()" aria-label="Sortear amigo secreto">
-                    <img src="assets/play_circle_outline.png" alt="Ícone para sortear">
+                    <img src="assets/play_circle_outline.png" alt="" aria-hidden="true">
                     Sortear amigo
                 </button>
             </div>
