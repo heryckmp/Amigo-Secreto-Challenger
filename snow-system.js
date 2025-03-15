@@ -17,9 +17,9 @@ class SnowSystem {
         this.snowflakeTexture = null;
         
         // Variáveis de configuração da neve
-        this.width = 200;  // Aumentado para cobrir mais da tela
-        this.height = 200;
-        this.depth = 200;
+        this.width = 250;  // Aumentado para cobrir mais da tela
+        this.height = 250;
+        this.depth = 250;
         
         // Inicializar o sistema
         this.init();
@@ -60,8 +60,8 @@ class SnowSystem {
             velocities[i3 + 1] = -(Math.random() * 0.4 + 0.2); // y (queda)
             velocities[i3 + 2] = (Math.random() * 2 - 1) * 0.08; // z (leve drift)
             
-            // Tamanho aleatório
-            sizes[i] = Math.random() * 5 + 2;
+            // Tamanho aleatório - aumentado para melhor visibilidade
+            sizes[i] = Math.random() * 6 + 2;
             
             // Opacidade variável para criar profundidade
             opacities[i] = Math.random() * 0.7 + 0.3;
@@ -80,7 +80,7 @@ class SnowSystem {
                 time: { value: 0 },
                 mouseX: { value: 0 },
                 mouseY: { value: 0 },
-                mouseStrength: { value: 1.0 } // Força do efeito do mouse
+                mouseStrength: { value: 1.5 } // Aumentado para interação mais visível
             },
             vertexShader: `
                 attribute float size;
@@ -101,34 +101,34 @@ class SnowSystem {
                     vec3 pos = position;
                     
                     // Aplicar velocidade com base no tempo
-                    pos.y = mod(pos.y - velocity.y * time * 15.0, 200.0) - 100.0;
-                    pos.x = mod(pos.x + velocity.x * time * 8.0, 200.0) - 100.0;
-                    pos.z = mod(pos.z + velocity.z * time * 8.0, 200.0) - 100.0;
+                    pos.y = mod(pos.y - velocity.y * time * 15.0, 250.0) - 125.0;
+                    pos.x = mod(pos.x + velocity.x * time * 8.0, 250.0) - 125.0;
+                    pos.z = mod(pos.z + velocity.z * time * 8.0, 250.0) - 125.0;
                     
                     // Fazer as partículas caírem em movimento de onda
-                    float waveX = sin(time * 0.4 + pos.x * 0.03) * 2.0;
-                    float waveZ = cos(time * 0.4 + pos.z * 0.03) * 2.0;
+                    float waveX = sin(time * 0.4 + pos.x * 0.03) * 2.5;
+                    float waveZ = cos(time * 0.4 + pos.z * 0.03) * 2.5;
                     pos.x += waveX;
                     pos.z += waveZ;
                     
                     // Efeito de vento
-                    pos.x += sin(time * 0.2) * 3.0;
+                    pos.x += sin(time * 0.2) * 4.0;
                     
                     // Interação com o mouse - cria um campo de força mais forte
                     float dist = length(vec2(pos.x - mouseX, pos.z - mouseY));
-                    float mouseEffect = 8.0 / (1.0 + dist * 0.05);
+                    float mouseEffect = 10.0 / (1.0 + dist * 0.04); // Aumentado para mais interatividade
                     vec2 mouseDir = normalize(vec2(pos.x - mouseX, pos.z - mouseY));
                     
                     // Aplicar efeito do mouse apenas se estiver próximo o suficiente
-                    if (dist < 60.0) {
-                        pos.x += mouseDir.x * mouseEffect * mouseStrength * 0.2;
-                        pos.z += mouseDir.y * mouseEffect * mouseStrength * 0.2;
+                    if (dist < 80.0) { // Aumentado o alcance
+                        pos.x += mouseDir.x * mouseEffect * mouseStrength * 0.3;
+                        pos.z += mouseDir.y * mouseEffect * mouseStrength * 0.3;
                     }
                     
                     // Definir tamanho da partícula com base na profundidade
                     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                     float depth = 1.0 + (mvPosition.z / 100.0);
-                    gl_PointSize = size * (300.0 / -mvPosition.z) * depth;
+                    gl_PointSize = size * (350.0 / -mvPosition.z) * depth; // Aumentado para melhor visibilidade
                     gl_Position = projectionMatrix * mvPosition;
                 }
             `,
@@ -143,7 +143,7 @@ class SnowSystem {
                     texColor.a *= vOpacity;
                     
                     // Adicionar brilho (branco no centro)
-                    texColor.rgb += pow(1.0 - length(gl_PointCoord - vec2(0.5)), 5.0) * 0.3;
+                    texColor.rgb += pow(1.0 - length(gl_PointCoord - vec2(0.5)), 5.0) * 0.4;
                     
                     if (texColor.a < 0.1) discard;
                     
@@ -157,7 +157,7 @@ class SnowSystem {
         
         // Criar sistema de partículas
         this.particles = new THREE.Points(geometry, material);
-        this.particles.position.z = -100; // Posicionar mais ao fundo
+        this.particles.position.z = -150; // Posicionar mais ao fundo
         this.scene.add(this.particles);
     }
     
@@ -173,7 +173,7 @@ class SnowSystem {
         this.particles.material.uniforms.mouseY.value = this.mouseY;
         
         // Animar força da interação do mouse
-        const pulseStrength = 0.8 + Math.sin(time * 2) * 0.2;
+        const pulseStrength = 1.2 + Math.sin(time * 2) * 0.3; // Aumentado para interação mais visível
         this.particles.material.uniforms.mouseStrength.value = pulseStrength;
     }
     
@@ -182,8 +182,8 @@ class SnowSystem {
      */
     onMouseMove(event) {
         // Converter posição do mouse para coordenadas do espaço 3D (-1 a 1)
-        this.mouseX = (event.clientX / window.innerWidth * 2 - 1) * 100;
-        this.mouseY = -(event.clientY / window.innerHeight * 2 - 1) * 50;
+        this.mouseX = (event.clientX / window.innerWidth * 2 - 1) * 125; // Aumentado o alcance
+        this.mouseY = -(event.clientY / window.innerHeight * 2 - 1) * 60; // Aumentado o alcance
     }
     
     /**
@@ -192,8 +192,8 @@ class SnowSystem {
     resize(width, height) {
         if (this.particles && this.particles.material.uniforms) {
             // Ajustar dimensões se necessário
-            this.width = width || 200;
-            this.height = height || 200;
+            this.width = width || 250;
+            this.height = height || 250;
         }
     }
     
