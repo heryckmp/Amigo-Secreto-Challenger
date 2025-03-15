@@ -1,201 +1,300 @@
-let amigos = [];
+// Elementos DOM
+const participantForm = document.getElementById('participant-form');
+const participantInput = document.getElementById('participant-input');
+const participantsList = document.getElementById('participants-list');
+const participantsCount = document.getElementById('participants-count');
+const drawButton = document.getElementById('draw-button');
+const resultList = document.getElementById('result-list');
+const resultSection = document.getElementById('result-section');
+const friendName = document.getElementById('friend-name');
+const closeResultButton = document.getElementById('close-result');
+const confettiCanvas = document.getElementById('confetti-canvas');
 
-// Função para ler texto em voz usando a API de síntese de fala
-function lerTextoEmVoz(texto) {
-    const synth = window.speechSynthesis;
+// Arrays para armazenar participantes e resultados
+let participants = [];
+let results = [];
 
-    if (!synth) {
-        console.error('Seu navegador não suporta síntese de fala.');
-        return;
+// Configuração do canvas para confete
+const ctx = confettiCanvas.getContext('2d');
+let confettiActive = false;
+let confettiPieces = [];
+const colors = ['#8A2BE2', '#9370DB', '#BA55D3', '#FF69B4', '#FFD700', '#00BFFF', '#32CD32'];
+
+// Inicialização
+function init() {
+    // Verificar se existem participantes salvos no localStorage
+    const savedParticipants = localStorage.getItem('amigoSecreto_participants');
+    if (savedParticipants) {
+        participants = JSON.parse(savedParticipants);
+        updateParticipantsList();
     }
 
-    // Cancela qualquer fala anterior
-    synth.cancel();
+    // Configurar tamanho do canvas para confetes
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
 
-    const utterance = new SpeechSynthesisUtterance(texto);
-    
-    // Tenta encontrar uma voz em português
-    utterance.voice = synth.getVoices().find(voice => 
-        voice.lang === 'pt-BR' || voice.lang === 'pt' || voice.lang.startsWith('pt')
-    ) || null;
-    
-    utterance.lang = 'pt-BR';
-    utterance.rate = 1; // Velocidade normal
-    utterance.pitch = 1; // Tom normal
-
-    synth.speak(utterance);
+    // Event listeners
+    participantForm.addEventListener('submit', addParticipant);
+    drawButton.addEventListener('click', drawSecretFriends);
+    closeResultButton.addEventListener('click', closeResultModal);
+    window.addEventListener('resize', updateCanvasSize);
 }
 
-// Adiciona um ouvinte para garantir que as vozes sejam carregadas
-window.speechSynthesis.onvoiceschanged = () => {
-    console.log('Vozes carregadas:', window.speechSynthesis.getVoices().length);
-};
-
-// Função para adicionar um novo amigo à lista
-function adicionarAmigo() {
-    const input = document.getElementById('amigo');
-    const nome = input.value.trim();
-    const resultado = document.getElementById('resultado');
-
-    // Limpa qualquer mensagem anterior
-    if (resultado) {
-        resultado.innerHTML = '';
-        resultado.className = 'result-list';
-    }
-
-    // Validações
-    if (nome === '') {
-        exibirMensagem('Por favor, insira um nome.', 'error');
-        return;
-    }
-
-    const nomeValido = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/;
-    if (!nomeValido.test(nome)) {
-        exibirMensagem('Nome inválido! Apenas letras e espaços são permitidos.', 'error');
-        return;
-    }
-
-    if (nome.length < 3) {
-        exibirMensagem('O nome deve conter pelo menos 3 caracteres.', 'error');
-        return;
-    }
-
-    if (amigos.some(amigo => amigo.toLowerCase() === nome.toLowerCase())) {
-        exibirMensagem('Esse nome já foi adicionado!', 'error');
-        return;
-    }
-
-    // Adiciona o novo amigo à lista
-    amigos.push(nome);
-    input.value = '';
-    
-    // Atualiza a lista visual
-    atualizarLista();
-    
-    // Foca novamente no input para adicionar outro nome
-    input.focus();
+// Atualizar tamanho do canvas ao redimensionar janela
+function updateCanvasSize() {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
 }
 
-// Exibe mensagens de feedback
-function exibirMensagem(texto, tipo) {
-    const resultado = document.getElementById('resultado');
-    if (!resultado) return;
+// Adicionar participante
+function addParticipant(e) {
+    e.preventDefault();
+    const name = participantInput.value.trim();
     
-    resultado.innerHTML = texto;
-    resultado.className = `result-list ${tipo}`;
-    
-    // Lê a mensagem para acessibilidade
-    lerTextoEmVoz(texto);
-    
-    // Remove a mensagem após alguns segundos
-    if (tipo === 'error') {
-        setTimeout(() => {
-            resultado.innerHTML = '';
-            resultado.className = 'result-list';
-        }, 5000);
-    }
-}
-
-// Atualiza a lista visual de amigos
-function atualizarLista() {
-    const lista = document.getElementById('listaAmigos');
-    lista.innerHTML = '';
-
-    if (!amigos.length) {
-        lista.innerHTML = '<li class="empty-list">Nenhum participante adicionado</li>';
+    if (name === '') {
+        showMessage('Por favor, digite um nome válido.', 'error');
         return;
     }
+    
+    if (participants.includes(name)) {
+        showMessage('Este nome já foi adicionado.', 'error');
+        return;
+    }
+    
+    participants.push(name);
+    saveParticipants();
+    updateParticipantsList();
+    
+    participantInput.value = '';
+    participantInput.focus();
+    
+    showMessage(`${name} foi adicionado com sucesso!`, 'success');
+}
 
-    const fragment = document.createDocumentFragment();
+// Salvar participantes no localStorage
+function saveParticipants() {
+    localStorage.setItem('amigoSecreto_participants', JSON.stringify(participants));
+}
 
-    amigos.forEach(function (amigo) {
-        const item = document.createElement('li');
+// Atualizar lista de participantes na interface
+function updateParticipantsList() {
+    participantsList.innerHTML = '';
+    participantsCount.textContent = participants.length;
+    
+    participants.forEach((participant, index) => {
+        const li = document.createElement('li');
         
-        const texto = document.createElement('span');
-        texto.textContent = amigo;
-        texto.className = 'name-item';
-
-        const lixeiraImg = document.createElement('img');
-        lixeiraImg.src = 'assets/trash.png';
-        lixeiraImg.alt = `Remover ${amigo}`;
-        lixeiraImg.className = 'trash-icon';
-        lixeiraImg.setAttribute('tabindex', '0'); // Torna o ícone focável
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = participant;
+        nameSpan.classList.add('name-item');
         
-        // Adiciona eventos de mouse e teclado para acessibilidade
-        lixeiraImg.onclick = () => removerAmigo(amigo);
-        lixeiraImg.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                removerAmigo(amigo);
-                e.preventDefault();
-            }
-        };
-
-        item.appendChild(texto);
-        item.appendChild(lixeiraImg);
-        fragment.appendChild(item);
+        const deleteButton = document.createElement('img');
+        deleteButton.src = 'https://img.icons8.com/ios-glyphs/30/ffffff/trash--v1.png';
+        deleteButton.alt = 'Remover';
+        deleteButton.classList.add('trash-icon');
+        deleteButton.onclick = () => removeParticipant(index);
+        
+        li.appendChild(nameSpan);
+        li.appendChild(deleteButton);
+        participantsList.appendChild(li);
     });
-
-    lista.appendChild(fragment);
+    
+    // Habilitar ou desabilitar botão de sorteio
+    if (participants.length >= 3) {
+        drawButton.removeAttribute('disabled');
+    } else {
+        drawButton.setAttribute('disabled', 'true');
+    }
 }
 
-// Remove um amigo da lista
-function removerAmigo(nome) {
-    amigos = amigos.filter(amigo => amigo !== nome);
-    atualizarLista();
+// Remover participante
+function removeParticipant(index) {
+    const removedName = participants[index];
+    participants.splice(index, 1);
+    saveParticipants();
+    updateParticipantsList();
+    showMessage(`${removedName} foi removido da lista.`, 'error');
 }
 
-// Realiza o sorteio do amigo secreto
-function sortearAmigo() {
-    if (amigos.length < 5) {
-        const mensagem = 'É necessário ter pelo menos 5 participantes para realizar o sorteio.';
-        exibirMensagem(mensagem, 'error');
+// Exibir mensagens temporárias
+function showMessage(message, type) {
+    resultList.textContent = message;
+    resultList.className = 'result-list glass';
+    resultList.classList.add(type);
+    
+    setTimeout(() => {
+        resultList.textContent = '';
+        resultList.className = 'result-list glass';
+    }, 3000);
+}
+
+// Embaralhar array (algoritmo Fisher-Yates)
+function shuffle(array) {
+    let currentIndex = array.length;
+    let temporaryValue, randomIndex;
+    
+    // Enquanto existirem elementos a embaralhar
+    while (currentIndex !== 0) {
+        // Selecionar um elemento restante
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex -= 1;
+        
+        // Trocar com o elemento atual
+        temporaryValue = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temporaryValue;
+    }
+    
+    return array;
+}
+
+// Realizar sorteio
+function drawSecretFriends() {
+    if (participants.length < 3) {
+        showMessage('São necessários pelo menos 3 participantes para o sorteio.', 'error');
         return;
     }
-
-    // Efeito visual de sorteio
-    const resultado = document.getElementById('resultado');
     
-    // Animação de sorteio
-    resultado.innerHTML = 'Sorteando...';
-    resultado.className = 'result-list';
+    // Copiar array de participantes e embaralhar
+    const shuffled = [...participants];
+    shuffle(shuffled);
     
-    // Simula um sorteio com animação
-    const nomes = [...amigos];
-    let contador = 0;
-    const intervalo = setInterval(() => {
-        const indiceAleatorio = Math.floor(Math.random() * nomes.length);
-        resultado.innerHTML = `Sorteando... ${nomes[indiceAleatorio]}`;
-        contador++;
-        
-        if (contador > 8) {
-            clearInterval(intervalo);
-            // Sorteia efetivamente
-            const indiceSorteado = Math.floor(Math.random() * amigos.length);
-            const amigoSorteado = amigos[indiceSorteado];
-            
-            // Mostra o resultado final
-            const mensagemFinal = `O amigo sorteado foi: ${amigoSorteado}`;
-            resultado.innerHTML = mensagemFinal;
-            resultado.className = 'result-list success';
-            
-            // Lê o resultado em voz alta
-            lerTextoEmVoz(mensagemFinal);
-        }
-    }, 200);
-}
-
-// Adiciona manipulador de eventos para o Enter no input
-document.addEventListener('DOMContentLoaded', function() {
-    const input = document.getElementById('amigo');
-    if (input) {
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                adicionarAmigo();
-                e.preventDefault();
-            }
-        });
+    // Gerar pares para o amigo secreto
+    results = [];
+    for (let i = 0; i < shuffled.length; i++) {
+        const giver = participants[i];
+        // O último participante tira o primeiro, fechando o ciclo
+        const receiver = (i === shuffled.length - 1) ? shuffled[0] : shuffled[i + 1];
+        results.push({ giver, receiver });
     }
     
-    // Inicializa a lista
-    atualizarLista();
-});
+    // Verificar se ninguém tirou a si mesmo
+    const invalidDraw = results.some(pair => pair.giver === pair.receiver);
+    if (invalidDraw) {
+        drawSecretFriends(); // Refazer o sorteio
+        return;
+    }
+    
+    showMessage('Sorteio realizado com sucesso! Clique nos nomes para ver quem tirou quem.', 'success');
+    showResults();
+}
+
+// Mostrar resultados do sorteio
+function showResults() {
+    // Para um demo, vamos mostrar um resultado aleatório
+    const randomIndex = Math.floor(Math.random() * results.length);
+    const randomResult = results[randomIndex];
+    
+    // Mostrar o nome do amigo sorteado na modal
+    friendName.textContent = randomResult.receiver;
+    
+    // Mostrar o modal com efeito de fade
+    resultSection.classList.add('show');
+    
+    // Iniciar animação de confete
+    startConfetti();
+    
+    // Aplicar animação ao nome
+    friendName.style.animation = 'none';
+    void friendName.offsetWidth; // Reiniciar animação
+    friendName.style.animation = 'fadeInUp 0.8s forwards';
+}
+
+// Fechar modal de resultados
+function closeResultModal() {
+    resultSection.classList.remove('show');
+    stopConfetti();
+}
+
+// Iniciar animação de confete
+function startConfetti() {
+    confettiActive = true;
+    confettiPieces = [];
+    
+    // Criar peças de confete
+    for (let i = 0; i < 150; i++) {
+        confettiPieces.push({
+            x: Math.random() * confettiCanvas.width,
+            y: Math.random() * -confettiCanvas.height,
+            size: Math.random() * 10 + 5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            speed: Math.random() * 3 + 2,
+            rotationSpeed: Math.random() * 5 - 2.5,
+            oscillationSpeed: Math.random() * 2 + 1,
+            oscillationDistance: Math.random() * 5 + 5,
+            shape: Math.random() < 0.5 ? 'circle' : 'square',
+            initialX: 0
+        });
+        
+        confettiPieces[i].initialX = confettiPieces[i].x;
+    }
+    
+    animateConfetti();
+}
+
+// Parar animação de confete
+function stopConfetti() {
+    confettiActive = false;
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+}
+
+// Animar confete
+function animateConfetti() {
+    if (!confettiActive) return;
+    
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    
+    confettiPieces.forEach(piece => {
+        ctx.save();
+        
+        // Movimento e oscilação
+        piece.y += piece.speed;
+        piece.x = piece.initialX + Math.sin(piece.y * 0.01) * piece.oscillationDistance;
+        piece.rotation += piece.rotationSpeed;
+        
+        // Desenhar peça de confete com efeito 3D (rotação)
+        ctx.translate(piece.x, piece.y);
+        ctx.rotate(piece.rotation * Math.PI / 180);
+        
+        // Aplicar efeito de sombra para profundidade 3D
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowBlur = 5;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        
+        // Desenhar formas diferentes
+        ctx.fillStyle = piece.color;
+        if (piece.shape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(0, 0, piece.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // Quadrado com perspectiva
+            ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size);
+            
+            // Adicionar brilho para efeito 3D
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(-piece.size / 2, -piece.size / 2);
+            ctx.lineTo(piece.size / 2, -piece.size / 2);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        ctx.restore();
+        
+        // Reiniciar peças que saem da tela
+        if (piece.y > confettiCanvas.height) {
+            piece.y = Math.random() * -100;
+            piece.initialX = Math.random() * confettiCanvas.width;
+            piece.x = piece.initialX;
+        }
+    });
+    
+    requestAnimationFrame(animateConfetti);
+}
+
+// Inicializar aplicação
+document.addEventListener('DOMContentLoaded', init);
