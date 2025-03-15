@@ -9,8 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <title>Amigo Secreto</title>
     <meta name="description" content="Aplicação para sorteio de amigo secreto online">
-    <!-- Script para animação de confetes -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -20,9 +18,9 @@
 
     <main class="main-content">
         <header class="header-banner">
-            <h1 class="main-title">Amigo Secreto</h1>
+            <h1 class="main-title" data-text="Amigo Secreto">Amigo Secreto</h1>
             <div class="gift-box">
-                <img src="assets/amigo-secreto.png" alt="Imagem representativa de amigo secreto" width="150" height="150">
+                <img src="https://cdn-icons-png.flaticon.com/512/3350/3350554.png" alt="Imagem representativa de presente de amigo secreto" width="150" height="150">
                 <div class="gift-shadow"></div>
             </div>
         </header>
@@ -30,55 +28,55 @@
         <section class="input-section glass">
             <h2 class="section-title">Digite o nome dos participantes</h2>
             
-            <div class="input-wrapper">
-                <input type="text" id="amigo" class="input-name" placeholder="Digite um nome" aria-label="Nome do participante">
-                <button class="button-add glass-button" onclick="adicionarAmigo()" aria-label="Adicionar participante">
+            <form id="participant-form" class="input-wrapper">
+                <input type="text" id="participant-input" class="input-name" placeholder="Digite um nome" aria-label="Nome do participante">
+                <button type="submit" class="glass-button" aria-label="Adicionar participante">
                     <span class="button-text">Adicionar</span>
                 </button>
-            </div>
+            </form>
             
             <div class="list-container">
                 <div class="list-header">
                     <h3 class="list-title">Participantes</h3>
-                    <span class="participants-count" id="participantCount">0</span>
+                    <span class="participants-count" id="participants-count">0</span>
                 </div>
-                <ul id="listaAmigos" class="name-list glass-list" aria-labelledby="lista-titulo" role="list">
-                    <!-- Lista de amigos adicionados será exibida aqui -->
+                <ul id="participants-list" class="glass-list" aria-labelledby="lista-titulo" role="list">
+                    <!-- Lista de participantes adicionados será exibida aqui -->
                 </ul>
                 <p id="lista-titulo" class="visually-hidden">Lista de participantes adicionados</p>
             </div>
             
-            <div id="resultado" class="result-list" aria-live="polite" role="status">
-                <!-- Resultado do sorteio será exibido aqui -->
+            <div id="result-list" class="result-list glass" aria-live="polite" role="status">
+                <!-- Mensagens de feedback serão exibidas aqui -->
             </div>
 
             <div class="button-container">
-                <button class="button-draw glass-button" onclick="sortearAmigo()" aria-label="Sortear amigo secreto">
+                <button id="draw-button" class="button-draw glass-button" aria-label="Sortear amigo secreto" disabled>
                     <div class="button-inner">
-                        <img src="assets/play_circle_outline.png" alt="" aria-hidden="true">
-                        <span class="button-text">Sortear amigo</span>
+                        <img src="https://cdn-icons-png.flaticon.com/512/5058/5058379.png" alt="" aria-hidden="true">
+                        <span class="button-text">Realizar Sorteio</span>
                     </div>
                 </button>
             </div>
         </section>
 
         <!-- Seção de resultado do sorteio, inicialmente oculta -->
-        <section id="resultadoSection" class="result-section glass hidden">
-            <div class="result-content">
-                <h2 class="result-title">Resultado do Sorteio</h2>
+        <section id="result-section" class="result-section">
+            <div class="result-content glass">
+                <h2 class="result-title">Seu Amigo Secreto é:</h2>
                 <div class="friend-card">
                     <div class="friend-avatar">
                         <div class="avatar-circle"></div>
                     </div>
-                    <h3 class="friend-name" id="amigoSorteado"></h3>
+                    <h3 class="friend-name" id="friend-name"></h3>
                 </div>
-                <button class="close-button glass-button" onclick="fecharResultado()">Fechar</button>
+                <button id="close-result" class="close-button glass-button">Fechar</button>
             </div>
         </section>
     </main>
 
     <!-- Canvas para confetes -->
-    <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
 
     <script src="app.js" defer></script>
 </body>
