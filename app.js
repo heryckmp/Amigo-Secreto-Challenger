@@ -9,6 +9,7 @@ const resultSection = document.getElementById('result-section');
 const friendName = document.getElementById('friend-name');
 const closeResultButton = document.getElementById('close-result');
 const confettiCanvas = document.getElementById('confetti-canvas');
+const canvasContainer = document.getElementById('canvas-container');
 
 // Arrays para armazenar participantes e resultados
 let participants = [];
@@ -19,6 +20,12 @@ const ctx = confettiCanvas.getContext('2d');
 let confettiActive = false;
 let confettiPieces = [];
 const colors = ['#8A2BE2', '#9370DB', '#BA55D3', '#FF69B4', '#FFD700', '#00BFFF', '#32CD32'];
+
+// Variáveis para Three.js
+let scene, camera, renderer;
+let presentModel;
+let clock;
+let mouse = { x: 0, y: 0 };
 
 // Inicialização
 function init() {
@@ -37,13 +44,141 @@ function init() {
     participantForm.addEventListener('submit', addParticipant);
     drawButton.addEventListener('click', drawSecretFriends);
     closeResultButton.addEventListener('click', closeResultModal);
-    window.addEventListener('resize', updateCanvasSize);
+    window.addEventListener('resize', onWindowResize);
+    document.addEventListener('mousemove', onMouseMove);
+
+    // Inicializar Three.js e o modelo 3D se o container existir
+    if (canvasContainer) {
+        initThreeJS();
+    }
+    
+    // Aplicar efeitos de animação aos elementos com atributo data-animation
+    initElementAnimations();
+}
+
+// Inicializar animações para elementos
+function initElementAnimations() {
+    // Obter todos os elementos com o atributo data-animation
+    const animatedElements = document.querySelectorAll('[data-animation]');
+    
+    animatedElements.forEach(element => {
+        // Aplicar classes de animação com base no tipo
+        const animationType = element.getAttribute('data-animation');
+        const delay = element.getAttribute('data-delay') || 0;
+        
+        // Inicialmente, esconder o elemento
+        element.style.opacity = '0';
+        
+        // Observar quando o elemento entra na viewport
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Atrasar a animação conforme especificado
+                    setTimeout(() => {
+                        // Remover observador após animar
+                        observer.unobserve(element);
+                        
+                        // Aplicar animação com base no tipo
+                        element.style.opacity = '1';
+                        
+                        switch (animationType) {
+                            case 'fadeIn':
+                                element.style.animation = `fadeIn 1s forwards`;
+                                break;
+                            case 'fadeUp':
+                                element.style.animation = `fadeUp 0.8s forwards`;
+                                break;
+                            case 'scale':
+                                element.style.animation = `scale 1s forwards`;
+                                break;
+                            default:
+                                element.style.animation = `fadeIn 1s forwards`;
+                        }
+                    }, delay * 1000);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        // Começar a observar o elemento
+        observer.observe(element);
+    });
+}
+
+// Inicializar Three.js
+function initThreeJS() {
+    // Criar relógio para animações
+    clock = new THREE.Clock();
+    
+    // Configurar cena
+    scene = new THREE.Scene();
+    
+    // Configurar câmera
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+    
+    // Configurar renderizador
+    renderer = new THREE.WebGLRenderer({ 
+        alpha: true,
+        antialias: true 
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    canvasContainer.appendChild(renderer.domElement);
+    
+    // Adicionar luzes
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 10);
+    scene.add(directionalLight);
+    
+    // Criar modelo 3D de presente
+    presentModel = new PresentModel(scene, { x: 0, y: 0, z: 0 }, 2);
+    
+    // Iniciar loop de animação
+    animate();
+}
+
+// Movimento do mouse
+function onMouseMove(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }
 
 // Atualizar tamanho do canvas ao redimensionar janela
-function updateCanvasSize() {
+function onWindowResize() {
+    // Atualizar canvas confetti
     confettiCanvas.width = window.innerWidth;
     confettiCanvas.height = window.innerHeight;
+    
+    // Atualizar Three.js se existir
+    if (renderer && camera) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+}
+
+// Loop de animação para Three.js
+function animate() {
+    requestAnimationFrame(animate);
+    
+    const time = clock ? clock.getElapsedTime() : 0;
+    
+    // Animar modelo de presente
+    if (presentModel) {
+        presentModel.animate(time);
+        
+        // Adicionar movimento suave em resposta ao mouse
+        presentModel.present.rotation.y += mouse.x * 0.01;
+        presentModel.present.rotation.x += mouse.y * 0.01;
+    }
+    
+    // Renderizar cena
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
 }
 
 // Adicionar participante
@@ -69,6 +204,23 @@ function addParticipant(e) {
     participantInput.focus();
     
     showMessage(`${name} foi adicionado com sucesso!`, 'success');
+    
+    // Animar o presente 3D para "celebrar" a adição
+    if (presentModel) {
+        // Adicionar uma pequena animação de "pulo"
+        gsap.to(presentModel.present.position, {
+            y: 1,
+            duration: 0.3,
+            ease: 'power2.out',
+            onComplete: () => {
+                gsap.to(presentModel.present.position, {
+                    y: 0,
+                    duration: 0.5,
+                    ease: 'bounce.out'
+                });
+            }
+        });
+    }
 }
 
 // Salvar participantes no localStorage
@@ -84,6 +236,10 @@ function updateParticipantsList() {
     participants.forEach((participant, index) => {
         const li = document.createElement('li');
         
+        // Aplicar atributo de animação para entrada gradual
+        li.setAttribute('data-animation', 'fadeUp');
+        li.setAttribute('data-delay', (index * 0.1).toString());
+        
         const nameSpan = document.createElement('span');
         nameSpan.textContent = participant;
         nameSpan.classList.add('name-item');
@@ -98,6 +254,9 @@ function updateParticipantsList() {
         li.appendChild(deleteButton);
         participantsList.appendChild(li);
     });
+    
+    // Inicializar animações para os novos itens
+    initElementAnimations();
     
     // Habilitar ou desabilitar botão de sorteio
     if (participants.length >= 3) {
@@ -177,6 +336,30 @@ function drawSecretFriends() {
     
     showMessage('Sorteio realizado com sucesso! Clique nos nomes para ver quem tirou quem.', 'success');
     showResults();
+    
+    // Animar o modelo 3D para "celebrar" o sorteio
+    if (presentModel) {
+        // Animação especial para o sorteio
+        gsap.to(presentModel.present.scale, {
+            x: 3, y: 3, z: 3,
+            duration: 0.5,
+            ease: 'power2.out',
+            onComplete: () => {
+                gsap.to(presentModel.present.scale, {
+                    x: 2, y: 2, z: 2,
+                    duration: 0.8,
+                    ease: 'elastic.out(1, 0.3)'
+                });
+            }
+        });
+        
+        // Aumentar a velocidade de rotação temporariamente
+        gsap.to(presentModel.present.rotation, {
+            y: presentModel.present.rotation.y + Math.PI * 4,
+            duration: 2,
+            ease: 'power1.inOut'
+        });
+    }
 }
 
 // Mostrar resultados do sorteio
@@ -296,5 +479,48 @@ function animateConfetti() {
     requestAnimationFrame(animateConfetti);
 }
 
+// Definir animações CSS
+function setupAnimations() {
+    // Adicionar estilos de animação ao head se ainda não existem
+    if (!document.getElementById('animation-styles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'animation-styles';
+        
+        styleEl.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes fadeUp {
+                from { 
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes scale {
+                from { 
+                    opacity: 0;
+                    transform: scale(0.8);
+                }
+                to { 
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+        `;
+        
+        document.head.appendChild(styleEl);
+    }
+}
+
 // Inicializar aplicação
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    setupAnimations();
+    init();
+});
