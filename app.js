@@ -207,6 +207,9 @@ function drawNames() {
         return drawNames();
     }
     
+    // Inicia os fogos de artifício antes de mostrar o resultado
+    startFireworks();
+    
     // Mostra automaticamente o resultado para o primeiro participante
     showResultFor(participants[0].id);
     
@@ -233,9 +236,6 @@ function showResultFor(participantId) {
         
         // Cria o QR code
         generateQRCode(participantId);
-        
-        // Inicia os fogos de artifício
-        startFireworks();
     }
 }
 
@@ -376,6 +376,7 @@ function shakeElement(element) {
 
 // Efeito de fogos de artifício
 function startFireworks() {
+    // Ajustando o tamanho do canvas para cobrir toda a tela
     const canvas = fireworksCanvas;
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
@@ -385,21 +386,61 @@ function startFireworks() {
     const maxFireworks = 8;
     const maxSparks = 80;
     
+    // Cores vibrantes para os fogos
+    const colorPalettes = [
+        // Vermelho, laranja, amarelo (fogos quentes)
+        [
+            { r: 255, g: 0, b: 0 },
+            { r: 255, g: 100, b: 0 },
+            { r: 255, g: 200, b: 0 }
+        ],
+        // Azul, roxo, rosa (fogos frios)
+        [
+            { r: 0, g: 100, b: 255 },
+            { r: 100, g: 0, b: 255 },
+            { r: 255, g: 0, b: 200 }
+        ],
+        // Verde, azul turquesa, amarelo (fogos coloridos)
+        [
+            { r: 0, g: 255, b: 100 },
+            { r: 0, g: 200, b: 255 },
+            { r: 255, g: 255, b: 0 }
+        ],
+        // Dourado, branco, laranja (fogos clássicos)
+        [
+            { r: 255, g: 215, b: 0 },
+            { r: 255, g: 255, b: 255 },
+            { r: 255, g: 140, b: 0 }
+        ]
+    ];
+    
     // Inicializa os fogos de artifício
     for (let i = 0; i < maxFireworks; i++) {
         let firework = {
             sparks: []
         };
         
+        // Escolhe uma paleta de cores para este fogo de artifício
+        const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
+        
         for (let n = 0; n < maxSparks; n++) {
+            // Seleciona uma cor da paleta
+            const colorIndex = Math.floor(Math.random() * palette.length);
+            const color = palette[colorIndex];
+            
+            // Adiciona variação à cor
+            const variationFactor = 0.2; // 20% de variação
+            const r = Math.max(0, Math.min(255, color.r + Math.random() * 255 * variationFactor - 255 * variationFactor/2));
+            const g = Math.max(0, Math.min(255, color.g + Math.random() * 255 * variationFactor - 255 * variationFactor/2));
+            const b = Math.max(0, Math.min(255, color.b + Math.random() * 255 * variationFactor - 255 * variationFactor/2));
+            
             let spark = {
                 vx: Math.random() * 5 + 0.5,
                 vy: Math.random() * 5 + 0.5,
                 weight: Math.random() * 0.3 + 0.03,
-                // Cores vibrantes para os fogos
-                red: Math.floor(Math.random() * 255),
-                green: Math.floor(Math.random() * 255),
-                blue: Math.floor(Math.random() * 255)
+                red: r,
+                green: g,
+                blue: b
             };
             
             if (Math.random() > 0.5) spark.vx = -spark.vx;
@@ -420,7 +461,7 @@ function startFireworks() {
     
     function animateFireworks() {
         // Limpa o canvas com um pouco de transparência para criar efeito de rastro
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         fireworks.forEach((firework, index) => {
@@ -433,9 +474,9 @@ function startFireworks() {
                         let fade = i * 15 - firework.age * 1.5;
                         
                         if (fade > 0) {
-                            let r = Math.floor(spark.red * fade);
-                            let g = Math.floor(spark.green * fade);
-                            let b = Math.floor(spark.blue * fade);
+                            let r = Math.floor(spark.red * fade/15);
+                            let g = Math.floor(spark.green * fade/15);
+                            let b = Math.floor(spark.blue * fade/15);
                             
                             ctx.beginPath();
                             ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${fade / 15})`;
@@ -460,7 +501,7 @@ function startFireworks() {
                 
                 firework.age++;
                 
-                // Reseta o foguete após certo tempo
+                // Reseta o foguete após certo tempo ou aleatoriamente
                 if (firework.age > 80 && Math.random() < 0.05) {
                     resetFirework(firework);
                 }
@@ -485,6 +526,12 @@ function startFireworks() {
                 // Explode quando chega a certa altura ou aleatoriamente
                 if (Math.random() < 0.005 || firework.y < canvas.height * 0.3) {
                     firework.phase = 'explode';
+                    
+                    // Adição de um flash no momento da explosão
+                    ctx.beginPath();
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.arc(firework.x, firework.y, 15, 0, Math.PI * 2);
+                    ctx.fill();
                 }
             }
         });
@@ -587,6 +634,12 @@ function setupSnow() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Também redimensiona o canvas de fogos de artifício se existir
+        if (fireworksCanvas) {
+            fireworksCanvas.width = window.innerWidth;
+            fireworksCanvas.height = window.innerHeight;
+        }
     });
     
     // Inicia a animação
