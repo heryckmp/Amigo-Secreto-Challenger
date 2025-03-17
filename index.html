@@ -3,55 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amigo Secreto - Sorteio Online</title>
-    <meta name="description" content="Sistema de sorteio de amigo secreto online, gratuito e fácil de usar.">
-    
-    <!-- Fontes do Google -->
+    <title>Amigo Secreto Challenger</title>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Estilos CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Three.js para efeitos de fundo e neve -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- Styles -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Estilos para Animation.css -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    
-    <!-- QRCode.js para geração de códigos QR -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 </head>
 <body>
-    <!-- Background Animado -->
+    <!-- Background com animação -->
     <div class="background">
         <div class="bg-animation"></div>
     </div>
     
-    <!-- Container para o Canvas Three.js (neve) -->
-    <div id="snow-container" class="canvas-container"></div>
+    <!-- Contenedor para animações de neve -->
+    <div class="canvas-container"></div>
     
-    <!-- Container para o Canvas Three.js (presente 3D) -->
-    <div id="present-container" class="canvas-container"></div>
-    
-    <!-- Canvas para o Confetti -->
-    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
-    
-    <!-- Container Principal -->
+    <!-- Conteúdo principal -->
     <div class="main-content">
-        <!-- Cabeçalho e Banner -->
+        <!-- Header -->
         <header class="header-banner">
             <h1 class="main-title" data-text="Amigo Secreto">Amigo Secreto</h1>
             <div class="decoration-stars"></div>
+            <!-- Elementos decorativos -->
             <div class="decoration-element circle"></div>
             <div class="decoration-element triangle"></div>
             <div class="decoration-element square"></div>
         </header>
         
-        <!-- Seção de Entrada -->
+        <!-- Seção de entrada -->
         <section class="input-section glass">
-            <h2 class="section-title">Adicione os Participantes</h2>
+            <h2 class="section-title">Adicionar Participantes</h2>
             
             <div class="input-wrapper">
-                <input type="text" id="input-name" class="input-name" placeholder="Digite o nome do participante..." autocomplete="off">
+                <input type="text" id="input-name" class="input-name" placeholder="Digite o nome do participante..." maxlength="30">
                 <button id="add-button" class="glass-button">
                     <div class="button-inner">
                         <span class="button-text">Adicionar</span>
@@ -59,16 +49,16 @@
                 </button>
             </div>
             
-            <!-- Lista de Participantes -->
             <div class="list-container">
                 <div class="list-header">
-                    <h3 class="list-title">Lista de Participantes</h3>
+                    <span class="list-title">Lista de Participantes</span>
                     <span id="participants-count" class="participants-count">0</span>
                 </div>
-                <ul id="participants-list" class="glass-list"></ul>
+                <ul id="participants-list" class="glass-list">
+                    <!-- Lista de participantes será preenchida via JavaScript -->
+                </ul>
             </div>
             
-            <!-- Botão de Sortear -->
             <div class="button-container">
                 <button id="draw-button" class="glass-button button-draw" disabled>
                     <div class="button-inner">
@@ -76,65 +66,57 @@
                     </div>
                 </button>
             </div>
-            
-            <!-- Resultado do Sorteio (lista de pares) -->
-            <div id="result-list" class="result-list hidden"></div>
+        </section>
+        
+        <!-- Seção de resultado (inicialmente escondida) -->
+        <section id="result-section" class="result-section">
+            <div class="result-content glass">
+                <h2 class="result-title">Seu Amigo Secreto é</h2>
+                
+                <div class="friend-card">
+                    <div class="friend-avatar">
+                        <div class="avatar-circle"></div>
+                    </div>
+                    <h3 id="friend-name" class="friend-name">Nome do Amigo</h3>
+                </div>
+                
+                <!-- Seção de compartilhamento -->
+                <div class="share-section">
+                    <h3>Compartilhar este resultado</h3>
+                    
+                    <div class="share-options">
+                        <button id="copy-link-button" class="glass-button share-button">
+                            <div class="button-inner">
+                                <span class="button-text">Copiar Link</span>
+                            </div>
+                        </button>
+                        <button id="show-qr-button" class="glass-button share-button">
+                            <div class="button-inner">
+                                <span class="button-text">Código QR</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Container QR Code (inicialmente escondido) -->
+                    <div id="qr-container" class="qr-container hidden">
+                        <div id="qrcode"></div>
+                        <div class="qr-hint">Escaneie para compartilhar</div>
+                    </div>
+                </div>
+                
+                <button id="close-result" class="glass-button close-button">
+                    <div class="button-inner">
+                        <span class="button-text">Fechar</span>
+                    </div>
+                </button>
+            </div>
         </section>
     </div>
     
-    <!-- Overlay do Resultado (quando sorteado) -->
-    <div id="result-section" class="result-section">
-        <div class="result-content glass">
-            <h2 class="result-title">Seu Amigo Secreto é:</h2>
-            
-            <div class="friend-card">
-                <div class="friend-avatar">
-                    <div class="avatar-circle"></div>
-                </div>
-                <div id="friend-name" class="friend-name"></div>
-            </div>
-            
-            <!-- Nova seção de compartilhamento -->
-            <div class="share-section">
-                <h3>Compartilhar este resultado:</h3>
-                <div class="share-options">
-                    <button id="copy-link-button" class="glass-button share-button">
-                        <div class="button-inner">
-                            <span class="button-text">Copiar Link</span>
-                        </div>
-                    </button>
-                    <button id="show-qr-button" class="glass-button share-button">
-                        <div class="button-inner">
-                            <span class="button-text">Código QR</span>
-                        </div>
-                    </button>
-                </div>
-                <!-- QR Code container -->
-                <div id="qr-container" class="qr-container hidden">
-                    <div id="qrcode"></div>
-                    <p class="qr-hint">Escaneie para compartilhar</p>
-                </div>
-            </div>
-            
-            <button id="close-result" class="glass-button close-button">
-                <div class="button-inner">
-                    <span class="button-text">Fechar</span>
-                </div>
-            </button>
-        </div>
-    </div>
+    <!-- Canvas para confete -->
+    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
     
     <!-- Scripts -->
-    <!-- Three.js para animações 3D -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.126.0/examples/js/loaders/GLTFLoader.min.js"></script>
-    
-    <!-- GSAP para animações -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    
-    <!-- Scripts da aplicação -->
-    <script src="present-model.js"></script>
-    <script src="snow-system.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
