@@ -5,125 +5,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amigo Secreto</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Background -->
     <div class="background">
         <div class="bg-animation"></div>
-        <!-- Elementos decorativos -->
-        <div class="decoration-element circle"></div>
-        <div class="decoration-element triangle"></div>
-        <div class="decoration-element square"></div>
     </div>
     
-    <!-- Canvas para animação de neve -->
     <div class="canvas-container">
-        <canvas id="snow-canvas"></canvas>
+        <!-- Three.js será renderizado aqui -->
     </div>
-    
+
     <div class="main-content">
-        <!-- Header -->
-        <div class="header-banner">
+        <header class="header-banner">
             <h1 class="main-title" data-text="Amigo Secreto">Amigo Secreto</h1>
-            <div class="decoration-stars"></div>
-        </div>
-        
-        <!-- Seção de Entrada -->
+            <div class="decoration-element circle"></div>
+            <div class="decoration-element triangle"></div>
+            <div class="decoration-element square"></div>
+        </header>
+
         <section class="input-section glass">
             <h2 class="section-title">Adicionar Participantes</h2>
             
             <div class="input-wrapper">
-                <!-- Input de foto com ícone de câmera -->
                 <div class="photo-input-container">
-                    <div class="photo-preview" id="photo-preview" title="Adicionar foto (opcional)">
-                        <img id="preview-image" style="display: none;">
-                        <svg class="camera-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 15.2C13.7673 15.2 15.2 13.7673 15.2 12C15.2 10.2327 13.7673 8.8 12 8.8C10.2327 8.8 8.8 10.2327 8.8 12C8.8 13.7673 10.2327 15.2 12 15.2Z" fill="currentColor"/>
-                            <path d="M9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z" fill="currentColor"/>
+                    <div class="photo-preview">
+                        <input type="file" id="photoInput" accept="image/*" class="visually-hidden">
+                        <img id="photoPreview" style="display: none;">
+                        <svg class="add-photo-label" viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-5 11.5c-2.48 0-4.5-2.02-4.5-4.5s2.02-4.5 4.5-4.5 4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5zM12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                         </svg>
                     </div>
-                    <input type="file" id="photo-input" accept="image/*" class="visually-hidden">
                 </div>
-                
-                <input type="text" id="name-input" class="input-name" placeholder="Nome do participante" aria-label="Nome do participante">
-                <button id="add-button" class="glass-button">
-                    <span class="button-text">Adicionar</span>
+                <input type="text" id="inputName" class="input-name" placeholder="Digite o nome de uma pessoa...">
+                <button id="addButton" class="glass-button">
+                    <div class="button-inner">
+                        <span class="button-text">Adicionar</span>
+                    </div>
                 </button>
             </div>
-            
+
             <div class="list-container">
                 <div class="list-header">
-                    <h3 class="list-title">Participantes</h3>
-                    <span class="participants-count" id="participants-count">0</span>
+                    <span class="list-title">Participantes</span>
+                    <span class="participants-count" id="participantsCount">0</span>
                 </div>
-                
-                <ul id="participants-list" class="glass-list"></ul>
+                <ul class="glass-list" id="participantsList">
+                    <!-- Lista de participantes será gerada aqui pelo JavaScript -->
+                </ul>
             </div>
-            
+
             <div class="button-container">
-                <button id="draw-button" class="glass-button button-draw" disabled>
-                    <span class="button-text">Realizar Sorteio</span>
+                <button id="drawButton" class="glass-button button-draw" disabled>
+                    <div class="button-inner">
+                        <span class="button-text">Realizar Sorteio</span>
+                    </div>
                 </button>
             </div>
-            
-            <div id="result-list" class="result-list glass"></div>
         </section>
-        
-        <!-- Seção de Resultado (Modal) -->
-        <div id="result-section" class="result-section">
-            <div class="result-content glass">
-                <h2 class="result-title">Seu Amigo Secreto é</h2>
-                
-                <div class="friend-card">
-                    <div class="friend-avatar">
-                        <div id="avatar-circle" class="avatar-circle"></div>
-                    </div>
-                    <h3 id="friend-name" class="friend-name"></h3>
-                </div>
-                
-                <!-- Seção de compartilhamento -->
-                <div class="share-section">
-                    <h3>Compartilhar resultado</h3>
-                    <div class="share-options">
-                        <button id="share-button" class="glass-button share-button">
-                            <span class="button-text">Copiar Link</span>
-                        </button>
-                        <button id="qr-button" class="glass-button share-button">
-                            <span class="button-text">Código QR</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Container do QR Code -->
-                    <div id="qr-container" class="qr-container hidden">
-                        <div id="qrcode"></div>
-                        <p class="qr-hint">Escaneie para ver o resultado</p>
-                        <button id="copy-link-btn" class="glass-button" style="margin-top: 10px; padding: 8px 15px; font-size: 0.9rem;">
-                            <span class="button-text">Copiar Link</span>
-                        </button>
+    </div>
+
+    <!-- Seção de resultado com overlay -->
+    <div class="result-section" id="resultSection">
+        <div class="result-content glass">
+            <h2 class="result-title">Seu Amigo Secreto é</h2>
+            
+            <div class="friend-card">
+                <div class="friend-avatar">
+                    <div class="avatar-circle" id="friendAvatar">
+                        <!-- Imagem do amigo secreto será colocada aqui se disponível -->
                     </div>
                 </div>
-                
-                <button id="close-button" class="glass-button close-button">
+                <div class="friend-name" id="friendName">
+                    <!-- Nome do amigo secreto será colocado aqui -->
+                </div>
+            </div>
+            
+            <button id="closeResult" class="glass-button close-button">
+                <div class="button-inner">
                     <span class="button-text">Fechar</span>
-                </button>
+                </div>
+            </button>
+
+            <!-- Seção de compartilhamento -->
+            <div class="share-section">
+                <h3>Compartilhar este resultado</h3>
+                <div class="share-options">
+                    <button id="copyLinkButton" class="glass-button share-button">
+                        <div class="button-inner">
+                            <span class="button-text">Copiar Link</span>
+                        </div>
+                    </button>
+                    <button id="showQRButton" class="glass-button share-button">
+                        <div class="button-inner">
+                            <span class="button-text">Mostrar QR Code</span>
+                        </div>
+                    </button>
+                </div>
+                <div class="qr-container hidden" id="qrContainer">
+                    <div id="qrcode"></div>
+                    <div class="qr-hint">Escaneie para ver o resultado</div>
+                </div>
             </div>
         </div>
-        
-        <!-- Toast Notification -->
-        <div id="toast-notification" class="toast-notification">Link copiado com sucesso!</div>
     </div>
-    
+
+    <!-- Toast notification para feedback -->
+    <div class="toast-notification" id="toast">Link copiado com sucesso!</div>
+
     <!-- Canvas para confetti -->
-    <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
-    
-    <!-- Adicionar scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+    <canvas class="confetti-canvas" id="confetti-canvas"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.155.0/three.min.js"></script>
     <script src="app.js"></script>
-    
-    <!-- Adicionar pequeno texto informativo -->
-    <div style="text-align: center; margin-top: 20px; font-size: 0.8rem; opacity: 0.7;">
-        <p>A foto é opcional. Você pode adicionar participantes apenas com o nome.</p>
-    </div>
 </body>
 </html>
