@@ -150,6 +150,9 @@ function init() {
     
     // Limpar a foto ao iniciar
     previewImage.style.display = 'none';
+    
+    // Adicionar tooltip ao elemento photo-preview
+    photoPreview.setAttribute('title', 'Adicionar foto (opcional)');
 }
 
 // Handler para alteração de foto
