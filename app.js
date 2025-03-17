@@ -21,13 +21,9 @@ let currentResult = null; // Armazena o resultado atual para compartilhamento
 
 // Inicialização
 function init() {
-    // Verificar se há participantes salvos no localStorage
-    const savedParticipants = localStorage.getItem('amigo-secreto-participants');
-    if (savedParticipants) {
-        participants = JSON.parse(savedParticipants);
-        updateParticipantsList();
-    }
-
+    // Remover storage ao iniciar para que a lista seja limpa ao atualizar a página
+    localStorage.removeItem('amigo-secreto-participants');
+    
     // Configurar o tamanho do canvas para efeitos de confete
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -250,7 +246,6 @@ function addParticipant() {
         
         participants.push(name);
         updateParticipantsList();
-        localStorage.setItem('amigo-secreto-participants', JSON.stringify(participants));
         inputName.value = '';
         inputName.focus();
         checkDrawButtonState();
@@ -288,7 +283,6 @@ function updateParticipantsList() {
 function removeParticipant(index) {
     participants.splice(index, 1);
     updateParticipantsList();
-    localStorage.setItem('amigo-secreto-participants', JSON.stringify(participants));
     checkDrawButtonState();
 }
 
