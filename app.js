@@ -121,6 +121,64 @@ const confetti = {
     }
 };
 
+// Neve animada
+const snow = {
+    canvas: null,
+    context: null,
+    particles: [],
+    maxParticles: 150,
+    
+    init: function() {
+        this.canvas = document.getElementById('snow-canvas');
+        if (!this.canvas) return;
+        
+        this.context = this.canvas.getContext('2d');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.particles = [];
+        
+        for (let i = 0; i < this.maxParticles; i++) {
+            this.particles.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                radius: Math.random() * 3 + 1,
+                speed: Math.random() * 1 + 0.5,
+                opacity: Math.random() * 0.5 + 0.2
+            });
+        }
+        
+        window.addEventListener('resize', () => {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        });
+        
+        this.animate();
+    },
+    
+    animate: function() {
+        if (!this.canvas || !this.context) return;
+        
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.context.fillStyle = '#FFFFFF';
+        
+        this.particles.forEach(p => {
+            this.context.beginPath();
+            this.context.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            this.context.globalAlpha = p.opacity;
+            this.context.fill();
+            
+            p.y += p.speed;
+            
+            if (p.y > this.canvas.height) {
+                p.y = 0;
+                p.x = Math.random() * this.canvas.width;
+            }
+        });
+        
+        window.requestAnimationFrame(this.animate.bind(this));
+    }
+};
+
 // Inicializar o aplicativo
 function init() {
     // Remover dados salvos no localStorage ao iniciar a aplicação
@@ -129,6 +187,10 @@ function init() {
     results = [];
     updateParticipantsList();
     
+    // Inicializar o efeito de neve
+    snow.init();
+    
+    // Configurar event listeners
     addButton.addEventListener('click', addParticipant);
     nameInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') addParticipant();
@@ -157,10 +219,13 @@ function init() {
     
     // Adicionar tooltip ao elemento photo-preview
     photoPreview.setAttribute('title', 'Adicionar foto (opcional)');
+    
+    console.log('Inicialização completa!');
 }
 
 // Handler para alteração de foto
 function handlePhotoChange(e) {
+    console.log('Foto selecionada!');
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
@@ -175,6 +240,7 @@ function handlePhotoChange(e) {
 function updatePhotoPreview(dataUrl) {
     previewImage.src = dataUrl;
     previewImage.style.display = 'block';
+    console.log('Visualização de foto atualizada!');
 }
 
 // Limpar a visualização da foto
@@ -260,7 +326,10 @@ function updateParticipantsList() {
         trashIcon.src = 'https://api.iconify.design/mdi:trash-can-outline.svg';
         trashIcon.className = 'trash-icon';
         trashIcon.alt = 'Remover';
-        trashIcon.addEventListener('click', () => removeParticipant(index));
+        trashIcon.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevenir propagação para o li
+            removeParticipant(index);
+        });
         
         li.appendChild(trashIcon);
         participantsUl.appendChild(li);
@@ -322,6 +391,7 @@ function startDraw() {
 
 // Completar sorteio
 function completeDraw() {
+    console.log('Sorteio completo, gerando resultados...');
     // Criar cópia do array de participantes
     const shuffledNames = [...participantsList];
     results = [];
@@ -383,11 +453,18 @@ function updateParticipantsListWithResults() {
         
         // Tornar o container clicável
         infoDiv.style.cursor = 'pointer';
-        infoDiv.addEventListener('click', () => showResults(index));
+        infoDiv.addEventListener('click', () => {
+            console.log(`Mostrando resultado para ${participant.name}`);
+            showResults(index);
+        });
         
         // Adicionar container de info ao li
         li.appendChild(infoDiv);
         li.style.cursor = 'pointer';
+        li.addEventListener('click', () => {
+            console.log(`Li clicado para ${participant.name}`);
+            showResults(index);
+        });
         
         participantsUl.appendChild(li);
     });
@@ -395,14 +472,22 @@ function updateParticipantsListWithResults() {
 
 // Mostrar resultado
 function showResults(index) {
+    console.log(`Exibindo resultado para índice ${index}`);
     const result = results.find(r => r.person.name === participantsList[index].name);
+    if (!result) {
+        console.error('Resultado não encontrado para o participante', participantsList[index]);
+        return;
+    }
+    
     currentResult = result;
+    console.log('Resultado encontrado:', result);
     
     // Exibir o nome do amigo
     friendName.textContent = result.friend.name;
     
     // Atualizar o avatar com a foto ou manter o gradiente
     if (result.friend.photo) {
+        console.log('Exibindo foto do amigo');
         // Se tiver foto, criar e exibir a imagem
         if (!avatarCircle.querySelector('img')) {
             const img = document.createElement('img');
@@ -414,6 +499,7 @@ function showResults(index) {
         img.alt = `Foto de ${result.friend.name}`;
         img.style.display = 'block';
     } else {
+        console.log('Amigo sem foto, exibindo gradiente');
         // Se não tiver foto, remover imagem se existir
         const img = avatarCircle.querySelector('img');
         if (img) {
@@ -423,8 +509,10 @@ function showResults(index) {
     
     // Mostrar o modal
     resultSection.classList.add('show');
+    console.log('Modal de resultado exibido');
     
     // Iniciar efeito de confetes
+    console.log('Iniciando confetes');
     confetti.start();
     
     // Esconder QR code caso esteja visível
@@ -435,6 +523,7 @@ function showResults(index) {
 
 // Fechar modal de resultado
 function closeResultModal() {
+    console.log('Fechando modal de resultado');
     resultSection.classList.remove('show');
     
     // Parar efeito de confetes após fechar o modal
@@ -455,6 +544,7 @@ function checkSharedResult() {
     
     if (sharedData) {
         try {
+            console.log('Dados compartilhados encontrados na URL');
             const decodedData = JSON.parse(atob(sharedData));
             
             // Criar um resultado temporário
@@ -499,7 +589,10 @@ function checkSharedResult() {
 
 // Copiar link para a área de transferência
 function copyLinkToClipboard() {
-    if (!currentResult) return;
+    if (!currentResult) {
+        console.error('Nenhum resultado atual para compartilhar');
+        return;
+    }
     
     // Criar dados para compartilhar
     const shareData = {
@@ -512,11 +605,15 @@ function copyLinkToClipboard() {
     
     // Criar URL com os dados codificados
     const shareUrl = `${window.location.origin}${window.location.pathname}?result=${encodedData}`;
+    console.log('Link gerado:', shareUrl);
     
     // Copiar para área de transferência
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl)
-            .then(() => showToast('Link copiado com sucesso!'))
+            .then(() => {
+                console.log('Link copiado com sucesso via API Clipboard');
+                showToast('Link copiado com sucesso!');
+            })
             .catch(err => {
                 console.error('Erro ao copiar:', err);
                 fallbackCopyToClipboard(shareUrl);
@@ -539,8 +636,10 @@ function fallbackCopyToClipboard(text) {
     try {
         const successful = document.execCommand('copy');
         if (successful) {
+            console.log('Link copiado com sucesso via execCommand');
             showToast('Link copiado com sucesso!');
         } else {
+            console.error('Falha ao copiar via execCommand');
             showToast('Não foi possível copiar o link');
         }
     } catch (err) {
@@ -564,7 +663,10 @@ function showToast(message) {
 
 // Alternar visibilidade do QR code
 function toggleQRCode() {
-    if (!currentResult) return;
+    if (!currentResult) {
+        console.error('Nenhum resultado atual para gerar QR Code');
+        return;
+    }
     
     if (qrContainer.classList.contains('hidden')) {
         // Criar código QR
@@ -599,6 +701,7 @@ function generateQRCode() {
     
     // Verificar se a biblioteca QRCode está disponível
     if (typeof QRCode !== 'undefined') {
+        console.log('Gerando QR code');
         // Gerar QR code usando o QRCode.js
         new QRCode(qrcodeElement, {
             text: shareUrl,
@@ -610,8 +713,8 @@ function generateQRCode() {
         });
     } else {
         // Fallback para quando a biblioteca não está disponível
-        qrcodeElement.innerHTML = '<p style="color: #333;">Erro ao carregar QR Code. Por favor, use o botão "Copiar Link".</p>';
         console.error('Biblioteca QRCode não encontrada');
+        qrcodeElement.innerHTML = '<p style="color: #333;">Erro ao carregar QR Code. Por favor, use o botão "Copiar Link".</p>';
     }
 }
 
