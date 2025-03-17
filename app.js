@@ -121,6 +121,9 @@ function addParticipant() {
     }
 }
 
+// SVG do ícone de lixeira em formato base64
+const trashIconSvg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXRyYXNoLTIiPjxwYXRoIGQ9Ik0zIDYgaDE4Ii8+PHBhdGggZD0iTTE5IDYgdjE0IGEyIDIgMCAwIDEgLTIgMiBoLTEwIGEyIDIgMCAwIDEgLTIgLTIgdi0xNCIvPjxwYXRoIGQ9Im04IDYgdjLQiIGQgMCAwIDEgNCAtNCBoNCBhMiAyIDAgMCAxIDIgMnYyIi8+PHBhdGggZD0iTTEwIDExdjYiLz48cGF0aCBkPSJNMTQgMTF2NiIvPjwvc3ZnPg==';
+
 // Atualiza a lista de participantes na UI
 function updateParticipantList() {
     participantsList.innerHTML = '';
@@ -137,14 +140,17 @@ function updateParticipantList() {
                 </div>
                 <span class="name-item">${participant.name}</span>
             </div>
-            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXRyYXNoLTIiPjxwYXRoIGQ9Ik0zIDYoaW5WYWx1ZSB2MHY0RTZJTnUdWR2YDK2gGVvdm5ldGlL01RzcGlN="
-                class="trash-icon" data-id="${participant.id}">
+            <div class="delete-button" data-id="${participant.id}">
+                <img src="${trashIconSvg}" class="trash-icon" alt="Apagar">
+                <span class="delete-tooltip">Remover</span>
+            </div>
         `;
         
         // Adiciona o evento para remover o participante
-        const trashIcon = li.querySelector('.trash-icon');
-        trashIcon.addEventListener('click', function() {
-            removeParticipant(participant.id);
+        const deleteButton = li.querySelector('.delete-button');
+        deleteButton.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            removeParticipant(id);
         });
         
         // Adiciona o elemento à lista
