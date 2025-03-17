@@ -13,11 +13,15 @@ const copyLinkButton = document.getElementById('copy-link-button');
 const showQrButton = document.getElementById('show-qr-button');
 const qrContainer = document.getElementById('qr-container');
 const qrcodeEl = document.getElementById('qrcode');
+const photoInput = document.getElementById('user-photo');
+const photoPreview = document.getElementById('photo-preview');
+const avatarImage = document.getElementById('avatar-image');
 
 // Arrays para armazenar participantes e resultados
 let participants = [];
 let results = [];
 let currentResult = null; // Armazena o resultado atual para compartilhamento
+let currentPhoto = null; // Armazena a foto atual sendo adicionada
 
 // Inicialização
 function init() {
@@ -39,6 +43,10 @@ function init() {
     // Event listeners para compartilhamento
     copyLinkButton.addEventListener('click', copyShareLink);
     showQrButton.addEventListener('click', toggleQrCode);
+    
+    // Event listener para upload de foto
+    photoInput.addEventListener('change', handlePhotoChange);
+    photoPreview.addEventListener('click', () => photoInput.click());
 
     // Verificar se existe um resultado compartilhado na URL
     checkSharedResult();
@@ -48,6 +56,57 @@ function init() {
     
     // Criar estrelas decorativas
     createStars();
+}
+
+// Função para lidar com a mudança da foto
+function handlePhotoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Verificar se é uma imagem
+    if (!file.type.match('image.*')) {
+        alert('Por favor, selecione uma imagem');
+        return;
+    }
+    
+    // Ler o arquivo como base64
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Salvar a foto atual
+        currentPhoto = e.target.result;
+        
+        // Atualizar a prévia
+        updatePhotoPreview(currentPhoto);
+    };
+    reader.readAsDataURL(file);
+}
+
+// Função para atualizar a prévia da foto
+function updatePhotoPreview(photoUrl) {
+    // Limpar conteúdo anterior
+    while (photoPreview.firstChild) {
+        if (photoPreview.firstChild.tagName !== 'INPUT') {
+            photoPreview.removeChild(photoPreview.firstChild);
+        }
+    }
+    
+    if (photoUrl) {
+        // Esconder o '+' ao mostrar a foto
+        const addLabel = photoPreview.querySelector('.add-photo-label');
+        if (addLabel) addLabel.style.display = 'none';
+        
+        // Adicionar a imagem como background
+        photoPreview.style.backgroundImage = `url(${photoUrl})`;
+        photoPreview.style.backgroundSize = 'cover';
+        photoPreview.style.backgroundPosition = 'center';
+    } else {
+        // Mostrar o '+' novamente se não houver foto
+        const addLabel = photoPreview.querySelector('.add-photo-label');
+        if (addLabel) addLabel.style.display = 'block';
+        
+        // Remover o background
+        photoPreview.style.backgroundImage = 'none';
+    }
 }
 
 // Verificar se existe um resultado compartilhado na URL
@@ -63,8 +122,11 @@ function checkSharedResult() {
             // Verificar se os dados contêm as informações necessárias
             if (decodedData && decodedData.giver && decodedData.receiver) {
                 // Se os participantes locais não incluem o giver, adicioná-lo
-                if (!participants.includes(decodedData.giver)) {
-                    participants.push(decodedData.giver);
+                if (!participants.some(p => p.name === decodedData.giver.name)) {
+                    participants.push({
+                        name: decodedData.giver.name,
+                        photo: decodedData.giver.photo || null
+                    });
                     updateParticipantsList();
                 }
                 
@@ -80,7 +142,14 @@ function checkSharedResult() {
 // Mostrar resultado compartilhado
 function showSharedResult(data) {
     // Atualizar o modal com o nome do amigo
-    friendName.innerHTML = data.receiver;
+    friendName.innerHTML = data.receiver.name;
+    
+    // Atualizar a foto do avatar se existir
+    if (data.receiver.photo) {
+        avatarImage.innerHTML = `<img src="${data.receiver.photo}" alt="${data.receiver.name}">`;
+    } else {
+        avatarImage.innerHTML = '';
+    }
     
     // Mostrar o modal de resultado
     resultSection.classList.add('show');
@@ -102,8 +171,14 @@ function showSharedResult(data) {
 function generateShareLink(result) {
     // Converter o resultado para uma string Base64
     const resultData = {
-        giver: result.giver,
-        receiver: result.receiver
+        giver: {
+            name: result.giver.name,
+            photo: result.giver.photo
+        },
+        receiver: {
+            name: result.receiver.name,
+            photo: result.receiver.photo
+        }
     };
     
     const base64Data = btoa(JSON.stringify(resultData));
@@ -239,14 +314,23 @@ function addParticipant() {
     const name = inputName.value.trim();
     if (name) {
         // Verificar se o nome já existe na lista
-        if (participants.includes(name)) {
+        if (participants.some(p => p.name === name)) {
             alert('Este nome já está na lista!');
             return;
         }
         
-        participants.push(name);
+        participants.push({
+            name: name,
+            photo: currentPhoto
+        });
+        
         updateParticipantsList();
         inputName.value = '';
+        
+        // Resetar a foto
+        currentPhoto = null;
+        updatePhotoPreview(null);
+        
         inputName.focus();
         checkDrawButtonState();
     }
@@ -258,10 +342,27 @@ function updateParticipantsList() {
     participants.forEach((participant, index) => {
         const listItem = document.createElement('li');
         
+        // Container para informações do participante (foto + nome)
+        const participantInfo = document.createElement('div');
+        participantInfo.className = 'participant-info';
+        
+        // Thumbnail
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'participant-thumbnail';
+        
+        if (participant.photo) {
+            const img = document.createElement('img');
+            img.src = participant.photo;
+            img.alt = participant.name;
+            thumbnail.appendChild(img);
+        }
+        
+        // Nome
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = participant;
+        nameSpan.textContent = participant.name;
         nameSpan.className = 'name-item';
         
+        // Botão de exclusão
         const deleteButton = document.createElement('img');
         deleteButton.src = 'https://cdn-icons-png.flaticon.com/512/3687/3687412.png';
         deleteButton.className = 'trash-icon';
@@ -271,7 +372,11 @@ function updateParticipantsList() {
             removeParticipant(index);
         };
         
-        listItem.appendChild(nameSpan);
+        // Montar a estrutura
+        participantInfo.appendChild(thumbnail);
+        participantInfo.appendChild(nameSpan);
+        
+        listItem.appendChild(participantInfo);
         listItem.appendChild(deleteButton);
         participantsList.appendChild(listItem);
     });
@@ -321,7 +426,7 @@ function drawNames() {
         
         // Verificar se alguém tirou a si mesmo
         for (let i = 0; i < givers.length; i++) {
-            if (givers[i] === receivers[i]) {
+            if (givers[i].name === receivers[i].name) {
                 valid = false;
                 break;
             }
@@ -359,7 +464,14 @@ function showResults() {
     currentResult = result;
     
     // Atualizar o modal com o nome do amigo
-    friendName.innerHTML = result.receiver;
+    friendName.innerHTML = result.receiver.name;
+    
+    // Atualizar a foto do avatar se existir
+    if (result.receiver.photo) {
+        avatarImage.innerHTML = `<img src="${result.receiver.photo}" alt="${result.receiver.name}">`;
+    } else {
+        avatarImage.innerHTML = '';
+    }
     
     // Mostrar o modal de resultado
     resultSection.classList.add('show');
