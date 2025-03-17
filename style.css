@@ -24,6 +24,7 @@
     --color-button: rgba(138, 43, 226, 0.8);
     --color-button-hover: rgba(186, 85, 211, 0.9);
     --color-button-active: rgba(211, 110, 255, 1);
+    --color-delete: rgba(255, 69, 58, 0.8); /* Cor para botão de excluir */
     
     /* Tamanhos */
     --border-radius-lg: 24px;
@@ -562,18 +563,55 @@ body {
     font-weight: 500;
 }
 
-.trash-icon {
+/* Estilos para o botão de excluir */
+.delete-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    width: 20px;
-    height: 20px;
-    opacity: 0.7;
-    transition: var(--transition-fast);
-    filter: invert(1);
+    padding: 8px;
+    border-radius: 50%;
+    background-color: transparent;
+    transition: all 0.3s ease;
 }
 
-.trash-icon:hover {
+.delete-button:hover {
+    background-color: var(--color-delete);
+}
+
+.trash-icon {
+    width: 22px;
+    height: 22px;
+    filter: invert(1);
+    opacity: 0.7;
+    transition: var(--transition-fast);
+}
+
+.delete-button:hover .trash-icon {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.15);
+}
+
+/* Tooltip para o botão de excluir */
+.delete-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    bottom: -30px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.delete-button:hover .delete-tooltip {
+    opacity: 1;
+    visibility: visible;
+    bottom: -25px;
 }
 
 /* Resultado */
