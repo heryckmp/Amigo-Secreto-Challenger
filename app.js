@@ -1,728 +1,685 @@
-// Elementos do DOM
-const inputName = document.getElementById('inputName');
-const addButton = document.getElementById('addButton');
-const participantsList = document.getElementById('participantsList');
-const participantsCount = document.getElementById('participantsCount');
-const drawButton = document.getElementById('drawButton');
-const resultSection = document.getElementById('resultSection');
-const friendName = document.getElementById('friendName');
-const friendAvatar = document.getElementById('friendAvatar');
-const closeResult = document.getElementById('closeResult');
-const copyLinkButton = document.getElementById('copyLinkButton');
-const showQRButton = document.getElementById('showQRButton');
-const qrContainer = document.getElementById('qrContainer');
-const toast = document.getElementById('toast');
-const fireworksCanvas = document.getElementById('fireworks-canvas');
+// DOM Elements
 const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
-const photoInputContainer = document.querySelector('.photo-preview');
+const addPhotoLabel = document.getElementById('addPhotoLabel');
+const nameInput = document.getElementById('nameInput');
+const addBtn = document.getElementById('addBtn');
+const participantsList = document.getElementById('participantsList');
+const participantsCount = document.getElementById('participantsCount');
+const drawBtn = document.getElementById('drawBtn');
+const resultSection = document.getElementById('resultSection');
+const resultContent = document.getElementById('resultContent');
+const resultName = document.getElementById('resultName');
+const closeResultBtn = document.getElementById('closeResultBtn');
+const avatarCircle = document.getElementById('avatarCircle');
 
-// Variáveis para armazenar participantes e resultados do sorteio
+// Icons in base64
+const cameraIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNhbWVyYSI+PHBhdGggZD0iTTEgOGEyIDIgMCAwIDEgMi0yaC4wOWEyIDIgMCAwIDAgMS40Mi0uNTlsMi41OS0yLjZhMiAyIDAgMCAxIDEuNDItLjU4aDRhMiAyIDAgMCAxIDEuNDIuNThsMi41OSAyLjZhMiAyIDAgMCAwIDEuNDIuNTlIMS44QTIgMiAwIDAgMSAxIDh6Ii8+PHBhdGggZD0iTTIgOHYxMGEyIDIgMCAwIDAgMiAyaDE2YTIgMiAwIDAgMCAyLTJWOCIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTMiIHI9IjMiLz48L3N2Zz4=';
+const trashIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0zIDZoMThNMTkgNnYxNGEyIDIgMCAwMS0yIDJIN2EyIDIgMCAwMS0yLTJWNm0zIDBWNGEyIDIgMCAwMTItMmg0YTIgMiAwIDAxMiAydjIiLz48cGF0aCBkPSJNMTAgMTF2NiIvPjxwYXRoIGQ9Ik0xNCAxMXY2Ii8+PC9zdmc+';
+
+// Global Variables
 let participants = [];
-let drawResults = {};
-let currentPhoto = null;
+let results = {};
+let selectedParticipant = null;
 let fireworksActive = false;
+let fireworksAnimationId = null;
 
-// Inicialização
+// Fireworks variables
+let canvas, ctx;
+let particles = [];
+let fireworks = [];
+
+// Initialize the application
 function init() {
-    // Limpar dados do localStorage ao iniciar
-    localStorage.removeItem('participants');
-    
-    // Apenas configura os event listeners
-    addButton.addEventListener('click', addParticipant);
-    inputName.addEventListener('keypress', function(event) {
+    // Setup event listeners
+    photoInput.addEventListener('change', handlePhotoUpload);
+    photoPreview.addEventListener('click', triggerPhotoUpload);
+    nameInput.addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
             addParticipant();
         }
     });
+    addBtn.addEventListener('click', addParticipant);
+    drawBtn.addEventListener('click', drawNames);
+    closeResultBtn.addEventListener('click', hideResults);
     
-    drawButton.addEventListener('click', drawNames);
-    closeResult.addEventListener('click', hideResults);
-    copyLinkButton.addEventListener('click', copyResultLink);
-    showQRButton.addEventListener('click', toggleQRCode);
-    
-    // Event listener para input de foto
-    photoInputContainer.addEventListener('click', function() {
-        photoInput.click();
-    });
-    
-    photoInput.addEventListener('change', handlePhotoChange);
-    
-    // Verifica se há um resultado para mostrar (vindo de um link compartilhado)
+    // Check for a participant ID in the URL (for sharing)
     checkForSharedResult();
+    
+    // Set camera icon
+    addPhotoLabel.style.backgroundImage = `url(${cameraIcon})`;
+    
+    // Initialize fireworks canvas
+    initFireworks();
 }
 
-// Função para lidar com a mudança de foto
-function handlePhotoChange(e) {
-    const file = e.target.files[0];
+// Function to check if there's a shared result in the URL
+function checkForSharedResult() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const participantId = urlParams.get('id');
+    
+    if (participantId) {
+        try {
+            // Try to retrieve the participant data from localStorage
+            const storedResults = localStorage.getItem('amigoSecreto_results');
+            const storedParticipants = localStorage.getItem('amigoSecreto_participants');
+            
+            if (storedResults && storedParticipants) {
+                results = JSON.parse(storedResults);
+                participants = JSON.parse(storedParticipants);
+                
+                // Find the participant by ID
+                const participant = participants.find(p => p.id === participantId);
+                
+                if (participant && results[participantId]) {
+                    // Display the result for this participant
+                    const friendId = results[participantId];
+                    const friend = participants.find(p => p.id === friendId);
+                    
+                    if (friend) {
+                        selectedParticipant = participant;
+                        showResultFor(participant, friend);
+                        
+                        // Make sure the canvas is visible before starting the animation
+                        document.querySelector('.fireworks-canvas').style.display = 'block';
+                        startFireworks();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error retrieving shared result:', error);
+        }
+    }
+}
+
+// Trigger photo upload when clicking on the preview
+function triggerPhotoUpload() {
+    photoInput.click();
+}
+
+// Handle photo upload
+function handlePhotoUpload(event) {
+    const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(event) {
-            currentPhoto = event.target.result;
-            updatePhotoPreview(currentPhoto);
+        reader.onload = function(e) {
+            // Update the preview with the uploaded photo
+            photoPreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            addPhotoLabel.style.display = 'none';
         };
         reader.readAsDataURL(file);
     }
 }
 
-// Atualiza a pré-visualização da foto
-function updatePhotoPreview(photoData) {
-    if (photoData) {
-        photoPreview.src = photoData;
-        photoPreview.style.display = 'block';
-        document.querySelector('.add-photo-label').style.display = 'none';
-    } else {
-        photoPreview.style.display = 'none';
-        document.querySelector('.add-photo-label').style.display = 'block';
-    }
-}
-
-// Limpa a pré-visualização da foto
-function clearPhotoPreview() {
-    photoPreview.src = '';
-    photoPreview.style.display = 'none';
-    document.querySelector('.add-photo-label').style.display = 'block';
-    currentPhoto = null;
-    photoInput.value = '';
-}
-
-// Adiciona um participante à lista
+// Add a participant to the list
 function addParticipant() {
-    const name = inputName.value.trim();
-    
-    if (name === '') {
-        shakeElement(inputName);
-        return;
-    }
-    
-    if (participants.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-        shakeElement(inputName);
-        showToast('Este nome já foi adicionado');
-        return;
-    }
-    
-    // Adiciona o participante com ou sem foto
-    const participant = {
-        id: Date.now().toString(),
-        name: name,
-        photo: currentPhoto
-    };
-    
-    participants.push(participant);
-    updateParticipantList();
-    
-    // Limpa campos e atualiza estado
-    inputName.value = '';
-    clearPhotoPreview();
-    
-    // Habilita o botão de sorteio se houver pelo menos 3 participantes
-    if (participants.length >= 3) {
-        drawButton.disabled = false;
+    const name = nameInput.value.trim();
+    if (name) {
+        // Generate a unique ID
+        const id = 'participant_' + Date.now();
+        
+        // Get the current photo if any
+        let photo = null;
+        const photoImg = photoPreview.querySelector('img');
+        if (photoImg) {
+            photo = photoImg.src;
+        }
+        
+        // Create the participant object
+        const participant = {
+            id,
+            name,
+            photo
+        };
+        
+        // Add to the array
+        participants.push(participant);
+        
+        // Update the UI
+        renderParticipants();
+        
+        // Save to localStorage
+        saveParticipants();
+        
+        // Reset the form
+        nameInput.value = '';
+        photoPreview.innerHTML = '';
+        addPhotoLabel.style.display = 'block';
+        nameInput.focus();
+        
+        // Update the Draw button state
+        updateDrawButtonState();
     }
 }
 
-// SVG do ícone de lixeira em formato base64
-const trashIconSvg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXRyYXNoLTIiPjxwYXRoIGQ9Ik0zIDYgaDE4Ii8+PHBhdGggZD0iTTE5IDYgdjE0IGEyIDIgMCAwIDEgLTIgMiBoLTEwIGEyIDIgMCAwIDEgLTIgLTIgdi0xNCIvPjxwYXRoIGQ9Im04IDYgdjLQiIGQgMCAwIDEgNCAtNCBoNCBhMiAyIDAgMCAxIDIgMnYyIi8+PHBhdGggZD0iTTEwIDExdjYiLz48cGF0aCBkPSJNMTQgMTF2NiIvPjwvc3ZnPg==';
-
-// Atualiza a lista de participantes na UI
-function updateParticipantList() {
+// Render the participants list
+function renderParticipants() {
     participantsList.innerHTML = '';
-    participantsCount.textContent = participants.length;
     
     participants.forEach(participant => {
         const li = document.createElement('li');
         
-        // Cria o HTML para a lista de participantes
-        li.innerHTML = `
-            <div class="participant-info">
-                <div class="participant-thumbnail">
-                    ${participant.photo ? `<img src="${participant.photo}" alt="${participant.name}">` : ''}
-                </div>
-                <span class="name-item">${participant.name}</span>
-            </div>
-            <div class="delete-button" data-id="${participant.id}">
-                <img src="${trashIconSvg}" class="trash-icon" alt="Apagar">
-                <span class="delete-tooltip">Remover</span>
-            </div>
+        // Create the participant info section
+        const participantInfo = document.createElement('div');
+        participantInfo.className = 'participant-info';
+        
+        // Create thumbnail
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'participant-thumbnail';
+        
+        if (participant.photo) {
+            thumbnail.innerHTML = `<img src="${participant.photo}" alt="${participant.name}">`;
+        } else {
+            // Add a placeholder for participants without photo
+            thumbnail.style.background = 'linear-gradient(45deg, #8A2BE2, #BA55D3)';
+            
+            // Add initials
+            const initials = document.createElement('span');
+            initials.textContent = participant.name.charAt(0).toUpperCase();
+            initials.style.color = 'white';
+            initials.style.fontWeight = 'bold';
+            initials.style.fontSize = '1.2rem';
+            initials.style.display = 'flex';
+            initials.style.alignItems = 'center';
+            initials.style.justifyContent = 'center';
+            initials.style.width = '100%';
+            initials.style.height = '100%';
+            
+            thumbnail.appendChild(initials);
+        }
+        
+        participantInfo.appendChild(thumbnail);
+        
+        // Create name element
+        const nameElement = document.createElement('span');
+        nameElement.className = 'name-item';
+        nameElement.textContent = participant.name;
+        participantInfo.appendChild(nameElement);
+        
+        li.appendChild(participantInfo);
+        
+        // Create delete button with trash icon
+        const deleteButton = document.createElement('div');
+        deleteButton.className = 'delete-button';
+        deleteButton.innerHTML = `
+            <img src="${trashIcon}" alt="Excluir" class="trash-icon" data-id="${participant.id}">
+            <span class="delete-tooltip">Excluir</span>
         `;
+        deleteButton.addEventListener('click', () => removeParticipant(participant.id));
         
-        // Adiciona o evento para remover o participante
-        const deleteButton = li.querySelector('.delete-button');
-        deleteButton.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            removeParticipant(id);
-        });
-        
-        // Adiciona o elemento à lista
+        li.appendChild(deleteButton);
         participantsList.appendChild(li);
     });
     
-    // Anima a entrada dos itens
-    const items = participantsList.querySelectorAll('li');
-    items.forEach((item, index) => {
-        item.style.opacity = 0;
-        setTimeout(() => {
-            item.style.opacity = 1;
-            item.style.transform = 'translateX(0)';
-        }, index * 100);
-    });
+    // Update the counter
+    participantsCount.textContent = participants.length;
 }
 
-// Remove um participante da lista
+// Remove a participant
 function removeParticipant(id) {
-    participants = participants.filter(p => p.id !== id);
-    updateParticipantList();
+    participants = participants.filter(participant => participant.id !== id);
+    renderParticipants();
+    saveParticipants();
+    updateDrawButtonState();
+}
+
+// Save participants to localStorage
+function saveParticipants() {
+    localStorage.setItem('amigoSecreto_participants', JSON.stringify(participants));
+}
+
+// Enable/disable Draw button based on number of participants
+function updateDrawButtonState() {
+    drawBtn.disabled = participants.length < 2;
     
-    // Desabilita o botão de sorteio se houver menos de 3 participantes
-    if (participants.length < 3) {
-        drawButton.disabled = true;
+    if (participants.length < 2) {
+        drawBtn.setAttribute('title', 'Você precisa adicionar pelo menos 2 participantes');
+    } else {
+        drawBtn.removeAttribute('title');
     }
 }
 
-// Realiza o sorteio dos nomes
+// Draw the names
 function drawNames() {
-    if (participants.length < 3) {
-        showToast('É preciso pelo menos 3 participantes');
+    if (participants.length < 2) {
+        alert('Você precisa adicionar pelo menos 2 participantes!');
         return;
     }
     
-    // Algoritmo de sorteio para garantir que ninguém tire o próprio nome
-    let available = [...participants];
-    drawResults = {};
+    // Reset previous results
+    results = {};
     
-    for (let i = 0; i < participants.length; i++) {
-        const currentPerson = participants[i];
-        let validChoices = available.filter(p => p.id !== currentPerson.id);
+    // Create a copy of the participants array
+    const availableFriends = [...participants];
+    
+    // Shuffle the array to randomize
+    shuffle(availableFriends);
+    
+    // Assign secret friends
+    participants.forEach(participant => {
+        let friendIndex;
+        let attempts = 0;
         
-        // Se não houver escolhas válidas, recomeça o sorteio
-        if (validChoices.length === 0) {
-            return drawNames();
-        }
-        
-        // Escolhe aleatoriamente um amigo secreto para a pessoa atual
-        const randomIndex = Math.floor(Math.random() * validChoices.length);
-        const secretFriend = validChoices[randomIndex];
-        
-        // Registra o resultado e remove o amigo sorteado das opções disponíveis
-        drawResults[currentPerson.id] = secretFriend;
-        available = available.filter(p => p.id !== secretFriend.id);
-    }
-    
-    // Verifica se alguém ficou sem amigo secreto
-    if (Object.keys(drawResults).length !== participants.length) {
-        return drawNames();
-    }
-    
-    // Inicia os fogos de artifício antes de mostrar o resultado
-    startFireworks();
-    
-    // Mostra automaticamente o resultado para o primeiro participante
-    showResultFor(participants[0].id);
-    
-    showToast('Sorteio realizado! O resultado está sendo exibido');
-}
-
-// Mostra o resultado para um participante específico
-function showResultFor(participantId) {
-    const secretFriend = drawResults[participantId];
-    
-    if (secretFriend) {
-        // Define o nome do amigo secreto
-        friendName.textContent = secretFriend.name;
-        
-        // Define a imagem do avatar, se disponível
-        if (secretFriend.photo) {
-            friendAvatar.innerHTML = `<img src="${secretFriend.photo}" alt="${secretFriend.name}">`;
-        } else {
-            friendAvatar.innerHTML = ''; // Mantém apenas o círculo gradiente
-        }
-        
-        // Mostra a seção de resultado
-        resultSection.classList.add('show');
-        
-        // Cria o QR code
-        generateQRCode(participantId);
-    }
-}
-
-// Esconde a seção de resultados e limpa os fogos de artifício
-function hideResults() {
-    // Remove a classe de exibição do resultado
-    resultSection.classList.remove('show');
-    
-    // Para a animação dos fogos
-    stopFireworks();
-    
-    // Limpa o canvas dos fogos completamente para evitar que continue sendo exibido
-    const ctx = fireworksCanvas.getContext('2d');
-    ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
-    
-    // Esconde o canvas dos fogos para garantir que não apareça mais
-    fireworksCanvas.style.display = 'none';
-    
-    // Esconde o container de QR code
-    qrContainer.classList.add('hidden');
-    
-    // Habilita novamente o botão de sorteio se houver participantes suficientes
-    if (participants.length >= 3) {
-        drawButton.disabled = false;
-    }
-    
-    // Pequeno delay e então exibe uma mensagem informando que pode realizar um novo sorteio
-    setTimeout(() => {
-        showToast('Você pode realizar um novo sorteio quando quiser!');
-    }, 500);
-}
-
-// Verifica se há um resultado compartilhado via URL
-function checkForSharedResult() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedData = urlParams.get('share');
-    
-    if (sharedData) {
-        try {
-            const { personId, personName, friendName, friendPhoto } = JSON.parse(atob(sharedData));
+        // Try to find a valid friend (not self)
+        do {
+            friendIndex = Math.floor(Math.random() * availableFriends.length);
+            attempts++;
             
-            if (personName && friendName) {
-                // Define o resultado compartilhado
-                document.getElementById('friendName').textContent = friendName;
-                
-                // Define a imagem, se disponível
-                if (friendPhoto) {
-                    friendAvatar.innerHTML = `<img src="${friendPhoto}" alt="${friendName}">`;
-                } else {
-                    friendAvatar.innerHTML = '';
-                }
-                
-                // Esconde os botões de compartilhamento
-                document.querySelector('.share-section').style.display = 'none';
-                
-                // Mostra o resultado
-                resultSection.classList.add('show');
-                
-                // Exibe o canvas de fogos antes de iniciar
-                fireworksCanvas.style.display = 'block';
-                
-                // Inicia os fogos de artifício
-                startFireworks();
+            // Prevent infinite loop
+            if (attempts > 100) {
+                console.error("Couldn't find a valid match after 100 attempts");
+                break;
             }
-        } catch (error) {
-            console.error('Erro ao decodificar dados compartilhados:', error);
-        }
-    }
-}
-
-// Copia o link do resultado para a área de transferência
-function copyResultLink() {
-    const selectedPersonId = getSelectedPersonId();
-    
-    if (selectedPersonId) {
-        const person = participants.find(p => p.id === selectedPersonId);
-        const friend = drawResults[selectedPersonId];
+        } while (
+            availableFriends.length > 1 && 
+            availableFriends[friendIndex].id === participant.id
+        );
         
-        // Compacta apenas os dados necessários
-        const shareData = {
-            personId: selectedPersonId,
-            personName: person.name,
-            friendName: friend.name,
-            friendPhoto: friend.photo
-        };
-        
-        // Codifica os dados para compartilhamento via URL
-        const encodedData = btoa(JSON.stringify(shareData));
-        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
-        
-        // Copia para a área de transferência
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            showToast('Link copiado com sucesso!');
-        }).catch(err => {
-            console.error('Erro ao copiar:', err);
-            showToast('Não foi possível copiar o link');
-        });
-    }
-}
-
-// Obtém o ID do participante selecionado
-function getSelectedPersonId() {
-    const friendNameText = friendName.textContent;
-    // Encontra quem tirou esta pessoa
-    for (const [personId, friend] of Object.entries(drawResults)) {
-        if (friend.name === friendNameText) {
-            return personId;
-        }
-    }
-    return null;
-}
-
-// Gera e mostra o QR Code para compartilhamento
-function generateQRCode(participantId) {
-    const person = participants.find(p => p.id === participantId);
-    const friend = drawResults[participantId];
-    
-    // Compacta apenas os dados necessários
-    const shareData = {
-        personId: participantId,
-        personName: person.name,
-        friendName: friend.name,
-        friendPhoto: friend.photo
-    };
-    
-    // Codifica os dados para compartilhamento via URL
-    const encodedData = btoa(JSON.stringify(shareData));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
-    
-    // Limpa o container e gera um novo QR code
-    document.getElementById('qrcode').innerHTML = '';
-    new QRCode(document.getElementById('qrcode'), {
-        text: shareUrl,
-        width: 180,
-        height: 180,
-        colorDark: '#8A2BE2',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
+        // Assign the friend
+        const friend = availableFriends.splice(friendIndex, 1)[0];
+        results[participant.id] = friend.id;
     });
-}
-
-// Alterna a visibilidade do QR Code
-function toggleQRCode() {
-    qrContainer.classList.toggle('hidden');
-    qrContainer.classList.toggle('show');
-}
-
-// Mostra um toast de notificação
-function showToast(message) {
-    toast.textContent = message;
-    toast.classList.add('show');
     
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
-}
-
-// Efeito de shake para elementos inválidos
-function shakeElement(element) {
-    element.classList.add('shake');
-    setTimeout(() => {
-        element.classList.remove('shake');
-    }, 500);
-}
-
-// Efeito de fogos de artifício
-function startFireworks() {
-    // Exibe o canvas de fogos (pode ter sido escondido depois de fechar)
-    fireworksCanvas.style.display = 'block';
+    // Save results to localStorage
+    localStorage.setItem('amigoSecreto_results', JSON.stringify(results));
     
-    // Ajustando o tamanho do canvas para cobrir toda a tela
-    const canvas = fireworksCanvas;
-    const ctx = canvas.getContext('2d');
+    // Show a message
+    const resultList = document.createElement('div');
+    resultList.className = 'result-list success';
+    resultList.textContent = 'Sorteio realizado com sucesso! Clique nos nomes para ver o resultado.';
+    
+    // Make participant names clickable
+    makeNamesClickable();
+}
+
+// Make participant names clickable to show results
+function makeNamesClickable() {
+    const nameItems = document.querySelectorAll('.name-item');
+    
+    nameItems.forEach(nameItem => {
+        const li = nameItem.closest('li');
+        const participantInfo = li.querySelector('.participant-info');
+        
+        // Get the participant ID
+        const participantId = li.querySelector('.trash-icon').dataset.id;
+        
+        // Add click event and visual cue
+        participantInfo.style.cursor = 'pointer';
+        participantInfo.style.transition = 'all 0.2s ease';
+        
+        // Remove previous event listeners
+        const newParticipantInfo = participantInfo.cloneNode(true);
+        participantInfo.parentNode.replaceChild(newParticipantInfo, participantInfo);
+        
+        // Add new event listener
+        newParticipantInfo.addEventListener('click', () => {
+            // Find the participant and friend
+            const participant = participants.find(p => p.id === participantId);
+            const friendId = results[participantId];
+            const friend = participants.find(p => p.id === friendId);
+            
+            // Store selected participant for sharing
+            selectedParticipant = participant;
+            
+            // Show the result
+            showResultFor(participant, friend);
+        });
+        
+        // Add hover effect
+        newParticipantInfo.addEventListener('mouseover', () => {
+            newParticipantInfo.style.transform = 'translateX(5px) scale(1.02)';
+            newParticipantInfo.style.color = '#BA55D3';
+        });
+        
+        newParticipantInfo.addEventListener('mouseout', () => {
+            newParticipantInfo.style.transform = 'translateX(0) scale(1)';
+            newParticipantInfo.style.color = '';
+        });
+    });
+    
+    // Show instructions
+    const resultList = document.querySelector('.result-list');
+    if (!resultList) {
+        const newResultList = document.createElement('div');
+        newResultList.className = 'result-list success';
+        newResultList.textContent = 'Sorteio realizado com sucesso! Clique nos nomes para ver o resultado.';
+        
+        const inputSection = document.querySelector('.input-section');
+        inputSection.appendChild(newResultList);
+    } else {
+        resultList.textContent = 'Sorteio realizado com sucesso! Clique nos nomes para ver o resultado.';
+        resultList.className = 'result-list success';
+    }
+}
+
+// Show the result for a specific participant
+function showResultFor(participant, friend) {
+    // Update the UI with the friend's name and photo
+    resultName.textContent = friend.name;
+    
+    // Update the avatar
+    if (friend.photo) {
+        avatarCircle.innerHTML = `<img src="${friend.photo}" alt="${friend.name}">`;
+    } else {
+        avatarCircle.innerHTML = '';
+        avatarCircle.style.background = 'linear-gradient(45deg, #8A2BE2, #BA55D3)';
+        
+        // Add initials for participants without photo
+        const initials = document.createElement('span');
+        initials.textContent = friend.name.charAt(0).toUpperCase();
+        initials.style.color = 'white';
+        initials.style.fontWeight = 'bold';
+        initials.style.fontSize = '2.5rem';
+        initials.style.display = 'flex';
+        initials.style.alignItems = 'center';
+        initials.style.justifyContent = 'center';
+        initials.style.width = '100%';
+        initials.style.height = '100%';
+        
+        avatarCircle.appendChild(initials);
+    }
+    
+    // Show the result section
+    resultSection.classList.add('show');
+    resultContent.classList.add('show');
+    
+    // Disable draw button during result display
+    drawBtn.disabled = true;
+    
+    // Start the fireworks animation
+    startFireworks();
+}
+
+// Hide the results
+function hideResults() {
+    resultSection.classList.remove('show');
+    resultContent.classList.remove('show');
+    
+    // Wait for the animation to complete before enabling the draw button
+    setTimeout(() => {
+        // Stop and clear the fireworks
+        stopFireworks();
+        clearCanvas();
+        
+        // Hide the canvas
+        const fireworksCanvas = document.querySelector('.fireworks-canvas');
+        if (fireworksCanvas) {
+            fireworksCanvas.style.display = 'none';
+        }
+        
+        // Re-enable draw button only if we have enough participants
+        if (participants.length >= 2) {
+            drawBtn.disabled = false;
+        }
+        
+        // Show friendly message
+        const resultList = document.querySelector('.result-list');
+        if (resultList) {
+            resultList.textContent = 'Você pode ver o resultado novamente clicando nos nomes ou realizar um novo sorteio.';
+        }
+    }, 400);
+}
+
+// Initialize fireworks canvas
+function initFireworks() {
+    canvas = document.querySelector('.fireworks-canvas');
+    ctx = canvas.getContext('2d');
+    
+    // Set canvas to full screen
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    const fireworks = [];
-    const maxFireworks = 8;
-    const maxSparks = 80;
+    // Hide canvas initially
+    canvas.style.display = 'none';
     
-    // Cores vibrantes para os fogos
-    const colorPalettes = [
-        // Vermelho, laranja, amarelo (fogos quentes)
-        [
-            { r: 255, g: 0, b: 0 },
-            { r: 255, g: 100, b: 0 },
-            { r: 255, g: 200, b: 0 }
-        ],
-        // Azul, roxo, rosa (fogos frios)
-        [
-            { r: 0, g: 100, b: 255 },
-            { r: 100, g: 0, b: 255 },
-            { r: 255, g: 0, b: 200 }
-        ],
-        // Verde, azul turquesa, amarelo (fogos coloridos)
-        [
-            { r: 0, g: 255, b: 100 },
-            { r: 0, g: 200, b: 255 },
-            { r: 255, g: 255, b: 0 }
-        ],
-        // Dourado, branco, laranja (fogos clássicos)
-        [
-            { r: 255, g: 215, b: 0 },
-            { r: 255, g: 255, b: 255 },
-            { r: 255, g: 140, b: 0 }
-        ]
-    ];
-    
-    // Inicializa os fogos de artifício
-    for (let i = 0; i < maxFireworks; i++) {
-        let firework = {
-            sparks: []
-        };
-        
-        // Escolhe uma paleta de cores para este fogo de artifício
-        const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
-        
-        for (let n = 0; n < maxSparks; n++) {
-            // Seleciona uma cor da paleta
-            const colorIndex = Math.floor(Math.random() * palette.length);
-            const color = palette[colorIndex];
-            
-            // Adiciona variação à cor
-            const variationFactor = 0.2; // 20% de variação
-            const r = Math.max(0, Math.min(255, color.r + Math.random() * 255 * variationFactor - 255 * variationFactor/2));
-            const g = Math.max(0, Math.min(255, color.g + Math.random() * 255 * variationFactor - 255 * variationFactor/2));
-            const b = Math.max(0, Math.min(255, color.b + Math.random() * 255 * variationFactor - 255 * variationFactor/2));
-            
-            let spark = {
-                vx: Math.random() * 5 + 0.5,
-                vy: Math.random() * 5 + 0.5,
-                weight: Math.random() * 0.3 + 0.03,
-                red: r,
-                green: g,
-                blue: b
-            };
-            
-            if (Math.random() > 0.5) spark.vx = -spark.vx;
-            if (Math.random() > 0.5) spark.vy = -spark.vy;
-            firework.sparks.push(spark);
-        }
-        
-        fireworks.push(firework);
-        resetFirework(firework);
-    }
-    
-    function resetFirework(firework) {
-        firework.x = Math.floor(Math.random() * canvas.width);
-        firework.y = canvas.height;
-        firework.age = 0;
-        firework.phase = 'fly';
-    }
-    
-    function animateFireworks() {
-        // Verifica se a animação ainda deve continuar
-        if (!fireworksActive) {
-            return;
-        }
-        
-        // Limpa o canvas com um pouco de transparência para criar efeito de rastro
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        fireworks.forEach((firework, index) => {
-            if (firework.phase === 'explode') {
-                firework.sparks.forEach((spark) => {
-                    for (let i = 0; i < 5; i++) {
-                        let trailAge = firework.age + i;
-                        let x = firework.x + spark.vx * trailAge;
-                        let y = firework.y + spark.vy * trailAge + spark.weight * trailAge * spark.weight * trailAge;
-                        let fade = i * 15 - firework.age * 1.5;
-                        
-                        if (fade > 0) {
-                            let r = Math.floor(spark.red * fade/15);
-                            let g = Math.floor(spark.green * fade/15);
-                            let b = Math.floor(spark.blue * fade/15);
-                            
-                            ctx.beginPath();
-                            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${fade / 15})`;
-                            
-                            // Varia entre formatos para cada partícula
-                            const shape = Math.floor(Math.random() * 3);
-                            if (shape === 0) {
-                                // Círculo
-                                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-                            } else if (shape === 1) {
-                                // Quadrado
-                                ctx.fillRect(x, y, 3, 3);
-                            } else {
-                                // Linha
-                                ctx.fillRect(x, y, 4, 1);
-                            }
-                            
-                            ctx.fill();
-                        }
-                    }
-                });
-                
-                firework.age++;
-                
-                // Reseta o foguete após certo tempo ou aleatoriamente
-                if (firework.age > 80 && Math.random() < 0.05) {
-                    resetFirework(firework);
-                }
-            } else {
-                // Fase de voo do foguete
-                firework.y = firework.y - 10;
-                
-                // Rastro do foguete
-                for (let i = 0; i < 5; i++) {
-                    ctx.beginPath();
-                    ctx.fillStyle = `rgba(255, ${150 + Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)}, ${1 - i * 0.2})`;
-                    ctx.arc(
-                        firework.x + Math.random() * 2 - 1, 
-                        firework.y + i * 5, 
-                        2, 
-                        0, 
-                        Math.PI * 2
-                    );
-                    ctx.fill();
-                }
-                
-                // Explode quando chega a certa altura ou aleatoriamente
-                if (Math.random() < 0.005 || firework.y < canvas.height * 0.3) {
-                    firework.phase = 'explode';
-                    
-                    // Adição de um flash no momento da explosão
-                    ctx.beginPath();
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.arc(firework.x, firework.y, 15, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        });
-        
-        // Continua a animação apenas se ainda estiver ativa
-        if (fireworksActive) {
-            requestAnimationFrame(animateFireworks);
-        }
-    }
-    
-    // Inicia a animação
-    fireworksActive = true;
-    animateFireworks();
+    // Update canvas size on window resize
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
 }
 
-// Parar os fogos de artifício
+// Start fireworks animation
+function startFireworks() {
+    // Make sure the canvas is visible
+    const fireworksCanvas = document.querySelector('.fireworks-canvas');
+    if (fireworksCanvas) {
+        fireworksCanvas.style.display = 'block';
+    }
+    
+    // Set flag to active
+    fireworksActive = true;
+    
+    // Create first firework
+    fireworks.push(createFirework());
+    
+    // Start animation loop
+    animate();
+}
+
+// Stop fireworks animation
 function stopFireworks() {
     fireworksActive = false;
-}
-
-// Setup da neve com Three.js
-function setupSnow() {
-    // Cria a cena
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     
-    // Configura o renderer
-    const renderer = new THREE.WebGLRenderer({ 
-        alpha: true,
-        antialias: true
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
-    document.querySelector('.canvas-container').appendChild(renderer.domElement);
-    
-    // Cria os flocos de neve
-    const snowflakeCount = 1000;
-    const snowflakeGeometry = new THREE.BufferGeometry();
-    const snowflakePositions = [];
-    const snowflakeSizes = [];
-    
-    for (let i = 0; i < snowflakeCount; i++) {
-        snowflakePositions.push(
-            (Math.random() - 0.5) * 50, // x
-            (Math.random() - 0.5) * 50, // y
-            (Math.random() - 0.5) * 50  // z
-        );
-        
-        snowflakeSizes.push(Math.random() * 5 + 1);
+    if (fireworksAnimationId) {
+        cancelAnimationFrame(fireworksAnimationId);
+        fireworksAnimationId = null;
     }
     
-    snowflakeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(snowflakePositions, 3));
-    snowflakeGeometry.setAttribute('size', new THREE.Float32BufferAttribute(snowflakeSizes, 1));
+    // Clear arrays
+    fireworks = [];
+    particles = [];
+}
+
+// Clear the canvas
+function clearCanvas() {
+    if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
+// Animation loop
+function animate() {
+    // Check if animation should continue
+    if (!fireworksActive) return;
     
-    // Material para os flocos de neve
-    const snowflakeMaterial = new THREE.PointsMaterial({ 
-        color: 0xFFFFFF,
-        size: 0.5,
-        transparent: true,
-        opacity: 0.8,
-        map: createSnowflakeTexture(),
-        depthWrite: false
+    // Continue the animation
+    fireworksAnimationId = requestAnimationFrame(animate);
+    
+    // Fade effect
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'lighter';
+    
+    // Launch new fireworks periodically
+    if (Math.random() < 0.05 && fireworks.length < 5) {
+        fireworks.push(createFirework());
+    }
+    
+    // Update and draw fireworks
+    updateFireworks();
+    drawFireworks();
+    
+    // Update and draw particles
+    updateParticles();
+    drawParticles();
+}
+
+// Create a new firework
+function createFirework() {
+    return {
+        x: Math.random() * canvas.width,
+        y: canvas.height,
+        targetY: Math.random() * canvas.height * 0.5,
+        color: getRandomColor(),
+        speed: 2 + Math.random() * 3,
+        size: 4,
+        exploded: false
+    };
+}
+
+// Update fireworks positions
+function updateFireworks() {
+    for (let i = fireworks.length - 1; i >= 0; i--) {
+        const firework = fireworks[i];
+        
+        // Move firework upward
+        firework.y -= firework.speed;
+        
+        // Check if firework should explode
+        if (firework.y <= firework.targetY) {
+            // Explosion
+            createExplosion(firework);
+            
+            // Remove the firework
+            fireworks.splice(i, 1);
+        }
+    }
+}
+
+// Create explosion particles
+function createExplosion(firework) {
+    const particleCount = 80 + Math.floor(Math.random() * 50);
+    
+    for (let i = 0; i < particleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 1;
+        
+        particles.push({
+            x: firework.x,
+            y: firework.y,
+            color: firework.color,
+            size: Math.random() * 3 + 1,
+            angle: angle,
+            speed: speed,
+            friction: 0.95,
+            gravity: 0.1,
+            alpha: 1,
+            decay: Math.random() * 0.03 + 0.02
+        });
+    }
+}
+
+// Update particles
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
+        
+        // Apply physics
+        particle.speed *= particle.friction;
+        particle.x += Math.cos(particle.angle) * particle.speed;
+        particle.y += Math.sin(particle.angle) * particle.speed + particle.gravity;
+        particle.alpha -= particle.decay;
+        
+        // Remove dead particles
+        if (particle.alpha <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+}
+
+// Draw fireworks
+function drawFireworks() {
+    fireworks.forEach(firework => {
+        ctx.beginPath();
+        ctx.arc(firework.x, firework.y, firework.size, 0, Math.PI * 2);
+        ctx.fillStyle = firework.color;
+        ctx.fill();
+        
+        // Draw trail
+        ctx.beginPath();
+        ctx.moveTo(firework.x, firework.y);
+        ctx.lineTo(firework.x, firework.y + 10);
+        ctx.strokeStyle = firework.color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
     });
+}
+
+// Draw particles
+function drawParticles() {
+    particles.forEach(particle => {
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${hexToRgb(particle.color)}, ${particle.alpha})`;
+        ctx.fill();
+    });
+}
+
+// Helper function to generate random colors
+function getRandomColor() {
+    const colors = [
+        '#FF0000', // Red
+        '#FFFF00', // Yellow
+        '#00FF00', // Green
+        '#00FFFF', // Cyan
+        '#0000FF', // Blue
+        '#FF00FF', // Magenta
+        '#FF6600', // Orange
+        '#FF3399', // Pink
+        '#9900FF'  // Purple
+    ];
     
-    // Cria os pontos
-    const snowflakes = new THREE.Points(snowflakeGeometry, snowflakeMaterial);
-    scene.add(snowflakes);
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Helper function to convert hex to RGB
+function hexToRgb(hex) {
+    // Remove # if present
+    hex = hex.replace('#', '');
     
-    // Posiciona a câmera
-    camera.position.z = 20;
+    // Parse hex values
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
     
-    // Função para animar a neve
-    function animateSnow() {
-        requestAnimationFrame(animateSnow);
-        
-        // Atualiza a posição dos flocos de neve
-        const positions = snowflakeGeometry.attributes.position.array;
-        
-        for (let i = 0; i < positions.length; i += 3) {
-            // Move para baixo
-            positions[i + 1] -= 0.05 * (snowflakeSizes[i / 3] / 2);
+    return `${r}, ${g}, ${b}`;
+}
+
+// Helper function to shuffle an array
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// Load participants from localStorage on startup
+function loadParticipants() {
+    const stored = localStorage.getItem('amigoSecreto_participants');
+    if (stored) {
+        try {
+            participants = JSON.parse(stored);
+            renderParticipants();
+            updateDrawButtonState();
+        } catch (error) {
+            console.error('Error loading participants:', error);
+        }
+    }
+}
+
+// Load results from localStorage on startup
+function loadResults() {
+    const stored = localStorage.getItem('amigoSecreto_results');
+    if (stored) {
+        try {
+            results = JSON.parse(stored);
             
-            // Move levemente para os lados
-            positions[i] += Math.sin(Date.now() * 0.001 + i) * 0.01;
-            
-            // Resetar quando atingir o limite inferior
-            if (positions[i + 1] < -25) {
-                positions[i + 1] = 25;
-                positions[i] = (Math.random() - 0.5) * 50;
+            if (Object.keys(results).length > 0) {
+                // If we have results, make names clickable
+                makeNamesClickable();
             }
+        } catch (error) {
+            console.error('Error loading results:', error);
         }
-        
-        snowflakeGeometry.attributes.position.needsUpdate = true;
-        
-        // Renderiza a cena
-        renderer.render(scene, camera);
     }
-    
-    // Redimensiona o canvas quando a janela for redimensionada
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        
-        // Também redimensiona o canvas de fogos de artifício se existir
-        if (fireworksCanvas) {
-            fireworksCanvas.width = window.innerWidth;
-            fireworksCanvas.height = window.innerHeight;
-        }
-    });
-    
-    // Inicia a animação
-    animateSnow();
 }
 
-// Cria uma textura para os flocos de neve
-function createSnowflakeTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    const context = canvas.getContext('2d');
-    
-    // Fundo transparente
-    context.fillStyle = 'rgba(0, 0, 0, 0)';
-    context.fillRect(0, 0, 32, 32);
-    
-    // Desenha o floco de neve
-    context.fillStyle = 'white';
-    context.beginPath();
-    context.arc(16, 16, 7, 0, Math.PI * 2, false);
-    context.fill();
-    
-    // Adiciona um brilho
-    const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 8);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-    gradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.2)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    context.fillStyle = gradient;
-    context.beginPath();
-    context.arc(16, 16, 8, 0, Math.PI * 2, false);
-    context.fill();
-    
-    // Cria a textura
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-}
-
-// Inicia a aplicação
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize the app when the page loads
+window.addEventListener('DOMContentLoaded', () => {
     init();
-    setupSnow();
+    loadParticipants();
+    loadResults();
 });
