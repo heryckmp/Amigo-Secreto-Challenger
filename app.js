@@ -1,232 +1,530 @@
-// Elementos DOM
-const inputName = document.getElementById('input-name');
-const addButton = document.getElementById('add-button');
-const participantsList = document.getElementById('participants-list');
-const drawButton = document.getElementById('draw-button');
-const participantsCount = document.getElementById('participants-count');
-const resultSection = document.getElementById('result-section');
-const resultContent = document.querySelector('.result-content');
-const friendName = document.getElementById('friend-name');
-const closeResultButton = document.getElementById('close-result');
-const canvas = document.getElementById('confetti-canvas');
-const copyLinkButton = document.getElementById('copy-link-button');
-const showQrButton = document.getElementById('show-qr-button');
-const qrContainer = document.getElementById('qr-container');
-const qrcodeEl = document.getElementById('qrcode');
-const photoInput = document.getElementById('user-photo');
-const photoPreview = document.getElementById('photo-preview');
-const avatarImage = document.getElementById('avatar-image');
-
-// Arrays para armazenar participantes e resultados
-let participants = [];
+// Elementos do DOM
+let participantsList = [];
 let results = [];
-let currentResult = null; // Armazena o resultado atual para compartilhamento
-let currentPhoto = null; // Armazena a foto atual sendo adicionada
+let currentResult = null;
+let isDrawing = false;
 
-// Inicialização
-function init() {
-    // Remover storage ao iniciar para que a lista seja limpa ao atualizar a página
-    localStorage.removeItem('amigo-secreto-participants');
+// Elementos do DOM
+const nameInput = document.getElementById('name-input');
+const addButton = document.getElementById('add-button');
+const participantsUl = document.getElementById('participants-list');
+const drawButton = document.getElementById('draw-button');
+const resultList = document.getElementById('result-list');
+const countElement = document.getElementById('participants-count');
+const resultSection = document.getElementById('result-section');
+const friendName = document.getElementById('friend-name');
+const avatarCircle = document.getElementById('avatar-circle');
+const closeButton = document.getElementById('close-button');
+const shareButton = document.getElementById('share-button');
+const qrButton = document.getElementById('qr-button');
+const qrContainer = document.getElementById('qr-container');
+const copyLinkBtn = document.getElementById('copy-link-btn');
+const toastNotification = document.getElementById('toast-notification');
+const confettiCanvas = document.getElementById('confetti-canvas');
+
+// Elementos de foto
+const photoInput = document.getElementById('photo-input');
+const photoPreview = document.getElementById('photo-preview');
+const previewImage = document.getElementById('preview-image');
+
+// CONFETTI.JS
+// Adaptado de https://www.kirilv.com/canvas-confetti/
+const confetti = {
+    canvas: null,
+    context: null,
+    particles: [],
+    colors: ['#8A2BE2', '#9370DB', '#BA55D3', '#FF69B4', '#FFD700'],
     
-    // Configurar o tamanho do canvas para efeitos de confete
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    init: function() {
+        this.canvas = confettiCanvas;
+        this.context = this.canvas.getContext('2d');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.particles = [];
+    },
+    
+    create: function() {
+        const particles = this.particles;
+        
+        // Criando partículas
+        for (let i = 0; i < 150; i++) {
+            particles.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * -this.canvas.height,
+                r: Math.random() * 6 + 2, // raio
+                d: Math.random() * 150 + 50, // densidade
+                color: this.colors[Math.floor(Math.random() * this.colors.length)],
+                tilt: Math.floor(Math.random() * 10) - 10,
+                tiltAngle: 0,
+                tiltAngleIncrement: Math.random() * 0.07 + 0.05
+            });
+        }
+    },
+    
+    draw: function() {
+        const ctx = this.context;
+        const particles = this.particles;
+        const canvas = this.canvas;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(function(p, i) {
+            ctx.beginPath();
+            ctx.fillStyle = p.color;
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.tilt + p.r, p.y + p.tilt);
+            ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Atualizando posição
+            p.tiltAngle += p.tiltAngleIncrement;
+            p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+            p.tilt = Math.sin(p.tiltAngle) * 15;
+            
+            // Se a partícula sair da tela, reposicionar
+            if (p.y > canvas.height) {
+                if (i % 5 > 0 || i % 2 == 0) { // 40% das partículas
+                    particles[i] = {
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * -canvas.height,
+                        r: p.r,
+                        d: p.d,
+                        color: p.color,
+                        tilt: Math.floor(Math.random() * 10) - 10,
+                        tiltAngle: p.tiltAngle,
+                        tiltAngleIncrement: p.tiltAngleIncrement
+                    };
+                }
+            }
+        });
+    },
+    
+    animate: function() {
+        this.draw();
+        if (this.particles.length > 0) {
+            window.requestAnimationFrame(this.animate.bind(this));
+        } else {
+            this.canvas.style.display = 'none';
+        }
+    },
+    
+    start: function() {
+        this.init();
+        this.create();
+        this.canvas.style.display = 'block';
+        window.requestAnimationFrame(this.animate.bind(this));
+    },
+    
+    stop: function() {
+        this.particles = [];
+    }
+};
 
-    // Event listeners
+// Inicializar o aplicativo
+function init() {
+    // Remover dados salvos no localStorage ao iniciar a aplicação
+    localStorage.removeItem('participants');
+    participantsList = [];
+    results = [];
+    updateParticipantsList();
+    
     addButton.addEventListener('click', addParticipant);
-    inputName.addEventListener('keypress', (e) => {
+    nameInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') addParticipant();
     });
-    drawButton.addEventListener('click', drawNames);
-    closeResultButton.addEventListener('click', closeResultModal);
+    drawButton.addEventListener('click', startDraw);
+    closeButton.addEventListener('click', closeResultModal);
+    shareButton.addEventListener('click', copyLinkToClipboard);
+    qrButton.addEventListener('click', toggleQRCode);
+    copyLinkBtn.addEventListener('click', copyLinkToClipboard);
     
-    // Event listeners para compartilhamento
-    copyLinkButton.addEventListener('click', copyShareLink);
-    showQrButton.addEventListener('click', toggleQrCode);
-    
-    // Event listener para upload de foto
+    // Event listener para o input de foto
     photoInput.addEventListener('change', handlePhotoChange);
-    photoPreview.addEventListener('click', () => photoInput.click());
-
-    // Verificar se existe um resultado compartilhado na URL
-    checkSharedResult();
-
-    // Inicializar Three.js para efeitos de fundo
-    initThreeJS();
+    photoPreview.addEventListener('click', function() {
+        photoInput.click();
+    });
     
-    // Criar estrelas decorativas
-    createStars();
+    // Verificar se há um resultado compartilhado na URL
+    checkSharedResult();
+    
+    // Limpar a foto ao iniciar
+    previewImage.style.display = 'none';
 }
 
-// Função para lidar com a mudança da foto
+// Handler para alteração de foto
 function handlePhotoChange(e) {
     const file = e.target.files[0];
-    if (!file) return;
-    
-    // Verificar se é uma imagem
-    if (!file.type.match('image.*')) {
-        alert('Por favor, selecione uma imagem');
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            updatePhotoPreview(event.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Atualizar a visualização da foto
+function updatePhotoPreview(dataUrl) {
+    previewImage.src = dataUrl;
+    previewImage.style.display = 'block';
+}
+
+// Limpar a visualização da foto
+function clearPhotoPreview() {
+    previewImage.src = '';
+    previewImage.style.display = 'none';
+    photoInput.value = '';
+}
+
+// Adicionar participante
+function addParticipant() {
+    const name = nameInput.value.trim();
+    if (name === '') {
+        showMessage('Por favor, digite um nome.', 'error');
         return;
     }
     
-    // Ler o arquivo como base64
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        // Salvar a foto atual
-        currentPhoto = e.target.result;
-        
-        // Atualizar a prévia
-        updatePhotoPreview(currentPhoto);
+    if (participantsList.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+        showMessage('Este nome já foi adicionado.', 'error');
+        return;
+    }
+    
+    // Criar objeto participante com nome e foto (se houver)
+    const participant = {
+        name: name,
+        photo: previewImage.style.display === 'none' ? null : previewImage.src
     };
-    reader.readAsDataURL(file);
+    
+    participantsList.push(participant);
+    updateParticipantsList();
+    
+    // Limpar inputs
+    nameInput.value = '';
+    clearPhotoPreview();
+    nameInput.focus();
+    
+    showMessage(`${name} foi adicionado à lista!`, 'success');
 }
 
-// Função para atualizar a prévia da foto
-function updatePhotoPreview(photoUrl) {
-    // Limpar conteúdo anterior
-    while (photoPreview.firstChild) {
-        if (photoPreview.firstChild.tagName !== 'INPUT') {
-            photoPreview.removeChild(photoPreview.firstChild);
-        }
-    }
+// Remover participante
+function removeParticipant(index) {
+    participantsList.splice(index, 1);
+    updateParticipantsList();
+}
+
+// Atualizar lista de participantes
+function updateParticipantsList() {
+    participantsUl.innerHTML = '';
+    countElement.textContent = participantsList.length;
     
-    if (photoUrl) {
-        // Esconder o '+' ao mostrar a foto
-        const addLabel = photoPreview.querySelector('.add-photo-label');
-        if (addLabel) addLabel.style.display = 'none';
+    participantsList.forEach((participant, index) => {
+        const li = document.createElement('li');
         
-        // Adicionar a imagem como background
-        photoPreview.style.backgroundImage = `url(${photoUrl})`;
-        photoPreview.style.backgroundSize = 'cover';
-        photoPreview.style.backgroundPosition = 'center';
-    } else {
-        // Mostrar o '+' novamente se não houver foto
-        const addLabel = photoPreview.querySelector('.add-photo-label');
-        if (addLabel) addLabel.style.display = 'block';
+        // Criar container para informações do participante
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'participant-info';
         
-        // Remover o background
-        photoPreview.style.backgroundImage = 'none';
-    }
-}
-
-// Verificar se existe um resultado compartilhado na URL
-function checkSharedResult() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedData = urlParams.get('share');
-    
-    if (sharedData) {
-        try {
-            // Decodificar os dados compartilhados de Base64
-            const decodedData = JSON.parse(atob(sharedData));
-            
-            // Verificar se os dados contêm as informações necessárias
-            if (decodedData && decodedData.giver && decodedData.receiver) {
-                // Se os participantes locais não incluem o giver, adicioná-lo
-                if (!participants.some(p => p.name === decodedData.giver.name)) {
-                    participants.push({
-                        name: decodedData.giver.name,
-                        photo: decodedData.giver.photo || null
-                    });
-                    updateParticipantsList();
-                }
-                
-                // Mostrar o resultado compartilhado
-                showSharedResult(decodedData);
-            }
-        } catch (error) {
-            console.error('Erro ao processar dados compartilhados:', error);
+        // Criar thumbnail com foto ou gradiente
+        const thumbnailDiv = document.createElement('div');
+        thumbnailDiv.className = 'participant-thumbnail';
+        
+        if (participant.photo) {
+            const img = document.createElement('img');
+            img.src = participant.photo;
+            img.alt = `Foto de ${participant.name}`;
+            thumbnailDiv.appendChild(img);
         }
+        
+        // Criar span para o nome
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'name-item';
+        nameSpan.textContent = participant.name;
+        
+        // Adicionar thumbnail e nome ao container de info
+        infoDiv.appendChild(thumbnailDiv);
+        infoDiv.appendChild(nameSpan);
+        
+        // Adicionar container de info ao li
+        li.appendChild(infoDiv);
+        
+        // Criar ícone de lixeira para remover
+        const trashIcon = document.createElement('img');
+        trashIcon.src = 'https://api.iconify.design/mdi:trash-can-outline.svg';
+        trashIcon.className = 'trash-icon';
+        trashIcon.alt = 'Remover';
+        trashIcon.addEventListener('click', () => removeParticipant(index));
+        
+        li.appendChild(trashIcon);
+        participantsUl.appendChild(li);
+    });
+    
+    // Atualizar estado do botão de sorteio
+    updateDrawButtonState();
+}
+
+// Atualizar estado do botão de sorteio
+function updateDrawButtonState() {
+    if (participantsList.length < 3) {
+        drawButton.disabled = true;
+        drawButton.setAttribute('title', 'Adicione pelo menos 3 participantes');
+    } else {
+        drawButton.disabled = false;
+        drawButton.removeAttribute('title');
     }
 }
 
-// Mostrar resultado compartilhado
-function showSharedResult(data) {
-    // Atualizar o modal com o nome do amigo
-    friendName.innerHTML = data.receiver.name;
+// Exibir mensagem
+function showMessage(text, type) {
+    resultList.textContent = text;
+    resultList.className = 'result-list glass';
+    resultList.classList.add(type);
     
-    // Atualizar a foto do avatar se existir
-    if (data.receiver.photo) {
-        avatarImage.innerHTML = `<img src="${data.receiver.photo}" alt="${data.receiver.name}">`;
-    } else {
-        avatarImage.innerHTML = '';
-    }
-    
-    // Mostrar o modal de resultado
-    resultSection.classList.add('show');
-    
-    // Iniciar a animação de confete
-    startConfetti();
-    
-    // Adicionar animação de fade-in para o nome do amigo
     setTimeout(() => {
-        friendName.style.opacity = '0';
-        friendName.style.animation = 'none';
-        void friendName.offsetWidth; // Forçar reflow
-        friendName.style.opacity = '';
-        friendName.style.animation = '';
+        resultList.textContent = '';
+        resultList.className = 'result-list glass';
+    }, 3000);
+}
+
+// Iniciar sorteio
+function startDraw() {
+    if (isDrawing) return;
+    if (participantsList.length < 3) {
+        showMessage('Adicione pelo menos 3 participantes para iniciar o sorteio.', 'error');
+        return;
+    }
+    
+    isDrawing = true;
+    drawButton.disabled = true;
+    
+    // Animação de sorteio
+    let shuffles = 0;
+    const maxShuffles = 20;
+    let shuffleInterval = setInterval(() => {
+        if (shuffles >= maxShuffles) {
+            clearInterval(shuffleInterval);
+            completeDraw();
+            return;
+        }
+        
+        shuffles++;
+        const randomIndex = Math.floor(Math.random() * participantsList.length);
+        showMessage(`Sorteando... ${participantsList[randomIndex].name}`, 'success');
     }, 100);
 }
 
-// Gerar link de compartilhamento
-function generateShareLink(result) {
-    // Converter o resultado para uma string Base64
-    const resultData = {
-        giver: {
-            name: result.giver.name,
-            photo: result.giver.photo
-        },
-        receiver: {
-            name: result.receiver.name,
-            photo: result.receiver.photo
-        }
-    };
+// Completar sorteio
+function completeDraw() {
+    // Criar cópia do array de participantes
+    const shuffledNames = [...participantsList];
+    results = [];
     
-    const base64Data = btoa(JSON.stringify(resultData));
+    // Embaralhar array usando o algoritmo Fisher-Yates
+    for (let i = shuffledNames.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledNames[i], shuffledNames[j]] = [shuffledNames[j], shuffledNames[i]];
+    }
     
-    // Construir a URL com o parâmetro de compartilhamento
-    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${base64Data}`;
+    // Atribuir amigo secreto a cada participante
+    for (let i = 0; i < participantsList.length; i++) {
+        const nextIndex = (i + 1) % participantsList.length;
+        results.push({
+            person: participantsList[i],
+            friend: shuffledNames[nextIndex]
+        });
+    }
     
-    return shareUrl;
+    showMessage('Sorteio realizado com sucesso! Clique nos nomes para ver os resultados.', 'success');
+    
+    // Atualizar lista com nomes clicáveis
+    updateParticipantsListWithResults();
+    
+    isDrawing = false;
+    drawButton.disabled = false;
 }
 
-// Copiar link de compartilhamento
-function copyShareLink() {
+// Atualizar lista com resultados
+function updateParticipantsListWithResults() {
+    participantsUl.innerHTML = '';
+    
+    participantsList.forEach((participant, index) => {
+        const li = document.createElement('li');
+        
+        // Criar container para informações do participante
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'participant-info';
+        
+        // Criar thumbnail com foto ou gradiente
+        const thumbnailDiv = document.createElement('div');
+        thumbnailDiv.className = 'participant-thumbnail';
+        
+        if (participant.photo) {
+            const img = document.createElement('img');
+            img.src = participant.photo;
+            img.alt = `Foto de ${participant.name}`;
+            thumbnailDiv.appendChild(img);
+        }
+        
+        // Criar span para o nome
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'name-item';
+        nameSpan.textContent = participant.name;
+        
+        // Adicionar thumbnail e nome ao container de info
+        infoDiv.appendChild(thumbnailDiv);
+        infoDiv.appendChild(nameSpan);
+        
+        // Tornar o container clicável
+        infoDiv.style.cursor = 'pointer';
+        infoDiv.addEventListener('click', () => showResults(index));
+        
+        // Adicionar container de info ao li
+        li.appendChild(infoDiv);
+        li.style.cursor = 'pointer';
+        
+        participantsUl.appendChild(li);
+    });
+}
+
+// Mostrar resultado
+function showResults(index) {
+    const result = results.find(r => r.person.name === participantsList[index].name);
+    currentResult = result;
+    
+    // Exibir o nome do amigo
+    friendName.textContent = result.friend.name;
+    
+    // Atualizar o avatar com a foto ou manter o gradiente
+    if (result.friend.photo) {
+        // Se tiver foto, criar e exibir a imagem
+        if (!avatarCircle.querySelector('img')) {
+            const img = document.createElement('img');
+            avatarCircle.appendChild(img);
+        }
+        
+        const img = avatarCircle.querySelector('img');
+        img.src = result.friend.photo;
+        img.alt = `Foto de ${result.friend.name}`;
+        img.style.display = 'block';
+    } else {
+        // Se não tiver foto, remover imagem se existir
+        const img = avatarCircle.querySelector('img');
+        if (img) {
+            img.style.display = 'none';
+        }
+    }
+    
+    // Mostrar o modal
+    resultSection.classList.add('show');
+    
+    // Iniciar efeito de confetes
+    confetti.start();
+    
+    // Esconder QR code caso esteja visível
+    if (!qrContainer.classList.contains('hidden')) {
+        qrContainer.classList.add('hidden');
+    }
+}
+
+// Fechar modal de resultado
+function closeResultModal() {
+    resultSection.classList.remove('show');
+    
+    // Parar efeito de confetes após fechar o modal
+    setTimeout(() => {
+        confetti.stop();
+    }, 500);
+    
+    // Esconder QR code caso esteja visível
+    if (!qrContainer.classList.contains('hidden')) {
+        qrContainer.classList.add('hidden');
+    }
+}
+
+// Verificar resultado compartilhado na URL
+function checkSharedResult() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('result');
+    
+    if (sharedData) {
+        try {
+            const decodedData = JSON.parse(atob(sharedData));
+            
+            // Criar um resultado temporário
+            currentResult = decodedData;
+            
+            // Mostrar resultado
+            friendName.textContent = decodedData.friend.name;
+            
+            // Atualizar o avatar com a foto ou manter o gradiente
+            if (decodedData.friend.photo) {
+                // Se tiver foto, criar e exibir a imagem
+                if (!avatarCircle.querySelector('img')) {
+                    const img = document.createElement('img');
+                    avatarCircle.appendChild(img);
+                }
+                
+                const img = avatarCircle.querySelector('img');
+                img.src = decodedData.friend.photo;
+                img.alt = `Foto de ${decodedData.friend.name}`;
+                img.style.display = 'block';
+            } else {
+                // Se não tiver foto, remover imagem se existir
+                const img = avatarCircle.querySelector('img');
+                if (img) {
+                    img.style.display = 'none';
+                }
+            }
+            
+            // Mostrar o modal
+            resultSection.classList.add('show');
+            
+            // Iniciar efeito de confetes
+            confetti.start();
+            
+            // Limpar a URL para não mostrar novamente ao atualizar
+            history.replaceState(null, '', window.location.pathname);
+        } catch (error) {
+            console.error('Erro ao decodificar dados compartilhados:', error);
+        }
+    }
+}
+
+// Copiar link para a área de transferência
+function copyLinkToClipboard() {
     if (!currentResult) return;
     
-    const shareLink = generateShareLink(currentResult);
+    // Criar dados para compartilhar
+    const shareData = {
+        person: currentResult.person,
+        friend: currentResult.friend
+    };
     
-    // Usar a API moderna de clipboard se disponível
+    // Codificar dados em base64
+    const encodedData = btoa(JSON.stringify(shareData));
+    
+    // Criar URL com os dados codificados
+    const shareUrl = `${window.location.origin}${window.location.pathname}?result=${encodedData}`;
+    
+    // Copiar para área de transferência
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(shareLink)
-            .then(() => {
-                showToast('Link copiado com sucesso!');
-            })
+        navigator.clipboard.writeText(shareUrl)
+            .then(() => showToast('Link copiado com sucesso!'))
             .catch(err => {
-                console.error('Erro ao copiar link:', err);
-                fallbackCopyTextToClipboard(shareLink);
+                console.error('Erro ao copiar:', err);
+                fallbackCopyToClipboard(shareUrl);
             });
     } else {
-        fallbackCopyTextToClipboard(shareLink);
+        fallbackCopyToClipboard(shareUrl);
     }
 }
 
 // Método alternativo para copiar para a área de transferência
-function fallbackCopyTextToClipboard(text) {
+function fallbackCopyToClipboard(text) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
-    
-    // Tornar o textarea invisível
     textArea.style.position = 'fixed';
-    textArea.style.top = '0';
-    textArea.style.left = '0';
-    textArea.style.width = '2em';
-    textArea.style.height = '2em';
-    textArea.style.padding = '0';
-    textArea.style.border = 'none';
-    textArea.style.outline = 'none';
-    textArea.style.boxShadow = 'none';
-    textArea.style.background = 'transparent';
-    
+    textArea.style.opacity = 0;
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
@@ -239,513 +537,69 @@ function fallbackCopyTextToClipboard(text) {
             showToast('Não foi possível copiar o link');
         }
     } catch (err) {
-        console.error('Erro ao copiar texto:', err);
+        console.error('Erro ao usar fallback para copiar:', err);
         showToast('Não foi possível copiar o link');
     }
     
     document.body.removeChild(textArea);
 }
 
-// Alternar exibição do QR Code
-function toggleQrCode() {
+// Mostrar toast de notificação
+function showToast(message) {
+    toastNotification.textContent = message;
+    toastNotification.classList.add('show');
+    
+    // Remover notificação após 3 segundos
+    setTimeout(() => {
+        toastNotification.classList.remove('show');
+    }, 3000);
+}
+
+// Alternar visibilidade do QR code
+function toggleQRCode() {
     if (!currentResult) return;
     
     if (qrContainer.classList.contains('hidden')) {
-        // Limpar QR code anterior
-        qrcodeEl.innerHTML = '';
-        
-        // Gerar link para compartilhamento
-        const shareLink = generateShareLink(currentResult);
-        
-        // Criar o QR Code
-        new QRCode(qrcodeEl, {
-            text: shareLink,
-            width: 170,
-            height: 170,
-            colorDark: "#8A2BE2",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-        
-        // Mostrar o container
+        // Criar código QR
+        generateQRCode();
         qrContainer.classList.remove('hidden');
-        qrContainer.classList.add('show');
+        setTimeout(() => qrContainer.classList.add('show'), 10);
     } else {
-        // Esconder o container
-        qrContainer.classList.add('hidden');
         qrContainer.classList.remove('show');
+        setTimeout(() => qrContainer.classList.add('hidden'), 300);
     }
 }
 
-// Exibir mensagem toast
-function showToast(message) {
-    // Remover toast existente se houver
-    const existingToast = document.querySelector('.toast-notification');
-    if (existingToast) {
-        document.body.removeChild(existingToast);
-    }
+// Gerar código QR para compartilhamento
+function generateQRCode() {
+    if (!currentResult) return;
     
-    // Criar elemento toast
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.textContent = message;
+    // Criar dados para compartilhar
+    const shareData = {
+        person: currentResult.person,
+        friend: currentResult.friend
+    };
     
-    // Adicionar ao corpo do documento
-    document.body.appendChild(toast);
+    // Codificar dados em base64
+    const encodedData = btoa(JSON.stringify(shareData));
     
-    // Mostrar com animação
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
+    // Criar URL com os dados codificados
+    const shareUrl = `${window.location.origin}${window.location.pathname}?result=${encodedData}`;
     
-    // Remover após alguns segundos
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => {
-            if (toast.parentNode) {
-                document.body.removeChild(toast);
-            }
-        }, 300);
-    }, 2500);
-}
-
-// Função para adicionar participante
-function addParticipant() {
-    const name = inputName.value.trim();
-    if (name) {
-        // Verificar se o nome já existe na lista
-        if (participants.some(p => p.name === name)) {
-            alert('Este nome já está na lista!');
-            return;
-        }
-        
-        participants.push({
-            name: name,
-            photo: currentPhoto
-        });
-        
-        updateParticipantsList();
-        inputName.value = '';
-        
-        // Resetar a foto
-        currentPhoto = null;
-        updatePhotoPreview(null);
-        
-        inputName.focus();
-        checkDrawButtonState();
-    }
-}
-
-// Atualizar lista de participantes
-function updateParticipantsList() {
-    participantsList.innerHTML = '';
-    participants.forEach((participant, index) => {
-        const listItem = document.createElement('li');
-        
-        // Container para informações do participante (foto + nome)
-        const participantInfo = document.createElement('div');
-        participantInfo.className = 'participant-info';
-        
-        // Thumbnail
-        const thumbnail = document.createElement('div');
-        thumbnail.className = 'participant-thumbnail';
-        
-        if (participant.photo) {
-            const img = document.createElement('img');
-            img.src = participant.photo;
-            img.alt = participant.name;
-            thumbnail.appendChild(img);
-        }
-        
-        // Nome
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = participant.name;
-        nameSpan.className = 'name-item';
-        
-        // Botão de exclusão
-        const deleteButton = document.createElement('img');
-        deleteButton.src = 'https://cdn-icons-png.flaticon.com/512/3687/3687412.png';
-        deleteButton.className = 'trash-icon';
-        deleteButton.alt = 'Remover';
-        deleteButton.title = 'Remover participante';
-        deleteButton.onclick = function() {
-            removeParticipant(index);
-        };
-        
-        // Montar a estrutura
-        participantInfo.appendChild(thumbnail);
-        participantInfo.appendChild(nameSpan);
-        
-        listItem.appendChild(participantInfo);
-        listItem.appendChild(deleteButton);
-        participantsList.appendChild(listItem);
+    // Limpar container do QR code
+    const qrcodeElement = document.getElementById('qrcode');
+    qrcodeElement.innerHTML = '';
+    
+    // Gerar QR code usando o QRCode.js
+    new QRCode(qrcodeElement, {
+        text: shareUrl,
+        width: 160,
+        height: 160,
+        colorDark: "#8A2BE2",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
     });
-    
-    participantsCount.textContent = participants.length;
 }
 
-// Remover participante
-function removeParticipant(index) {
-    participants.splice(index, 1);
-    updateParticipantsList();
-    checkDrawButtonState();
-}
-
-// Verificar estado do botão de sorteio
-function checkDrawButtonState() {
-    if (participants.length >= 3) {
-        drawButton.removeAttribute('disabled');
-    } else {
-        drawButton.setAttribute('disabled', 'true');
-    }
-}
-
-// Sortear nomes
-function drawNames() {
-    if (participants.length < 3) {
-        alert('Adicione pelo menos 3 participantes para realizar o sorteio!');
-        return;
-    }
-    
-    // Criar cópias dos arrays para não modificar o original
-    const givers = [...participants];
-    const receivers = [...participants];
-    
-    // Limpar resultados anteriores
-    results = [];
-    
-    // Algoritmo de sorteio evitando que alguém tire a si mesmo
-    let valid = true;
-    
-    do {
-        // Reiniciar a validação
-        valid = true;
-        
-        // Embaralhar a lista de receptores
-        shuffle(receivers);
-        
-        // Verificar se alguém tirou a si mesmo
-        for (let i = 0; i < givers.length; i++) {
-            if (givers[i].name === receivers[i].name) {
-                valid = false;
-                break;
-            }
-        }
-    } while (!valid);
-    
-    // Criar pares de amigo secreto
-    for (let i = 0; i < givers.length; i++) {
-        results.push({
-            giver: givers[i],
-            receiver: receivers[i]
-        });
-    }
-    
-    // Mostrar resultados
-    showResults();
-}
-
-// Embaralhar array (algoritmo Fisher-Yates)
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-// Mostrar resultados
-function showResults() {
-    // Selecionar um resultado aleatório para mostrar
-    const randomIndex = Math.floor(Math.random() * results.length);
-    const result = results[randomIndex];
-    
-    // Salvar o resultado atual para compartilhamento
-    currentResult = result;
-    
-    // Atualizar o modal com o nome do amigo
-    friendName.innerHTML = result.receiver.name;
-    
-    // Atualizar a foto do avatar se existir
-    if (result.receiver.photo) {
-        avatarImage.innerHTML = `<img src="${result.receiver.photo}" alt="${result.receiver.name}">`;
-    } else {
-        avatarImage.innerHTML = '';
-    }
-    
-    // Mostrar o modal de resultado
-    resultSection.classList.add('show');
-    
-    // Iniciar a animação de confete
-    startConfetti();
-    
-    // Adicionar animação de fade-in para o nome do amigo
-    setTimeout(() => {
-        friendName.style.opacity = '0';
-        friendName.style.animation = 'none';
-        void friendName.offsetWidth; // Forçar reflow
-        friendName.style.opacity = '';
-        friendName.style.animation = '';
-    }, 100);
-}
-
-// Fechar modal de resultado
-function closeResultModal() {
-    resultSection.classList.remove('show');
-    stopConfetti();
-    
-    // Esconder QR code se estiver visível
-    if (!qrContainer.classList.contains('hidden')) {
-        qrContainer.classList.add('hidden');
-        qrContainer.classList.remove('show');
-    }
-}
-
-// Inicializar a aplicação
+// Inicializar
 window.addEventListener('DOMContentLoaded', init);
-
-// Ajustar o tamanho do canvas quando a janela for redimensionada
-window.addEventListener('resize', function() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
-
-// Animação de Confete
-let confettiRunning = false;
-let confettiAnimation;
-
-function startConfetti() {
-    if (confettiRunning) return;
-    confettiRunning = true;
-    
-    const context = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-    const particles = [];
-    const particleCount = 150;
-    const gravity = 0.5;
-    
-    // Criar partículas
-    for (let i = 0; i < particleCount; i++) {
-        particles.push({
-            x: Math.random() * width, // x-coordenada
-            y: Math.random() * height - height, // y-coordenada (começando acima do canvas)
-            radius: Math.random() * 5 + 5, // tamanho
-            density: Math.random() * particleCount, // densidade / velocidade
-            color: `hsl(${Math.random() * 360}, 90%, 65%)`, // cor
-            rotation: Math.random() * 360, // rotação
-            velocity: { x: Math.random() * 6 - 3, y: Math.random() * 2 + 2 } // velocidade
-        });
-    }
-    
-    // Função de animação
-    function draw() {
-        context.clearRect(0, 0, width, height);
-        
-        for (let i = 0; i < particleCount; i++) {
-            const p = particles[i];
-            context.save();
-            context.translate(p.x, p.y);
-            context.rotate(p.rotation * Math.PI / 180);
-            context.fillStyle = p.color;
-            context.beginPath();
-            
-            // Desenhar formas aleatórias (círculos, quadrados, etc.)
-            const shapeType = i % 3;
-            
-            if (shapeType === 0) {
-                // Círculo
-                context.arc(0, 0, p.radius, 0, Math.PI * 2, true);
-            } else if (shapeType === 1) {
-                // Quadrado
-                context.rect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
-            } else {
-                // Estrela
-                for (let j = 0; j < 5; j++) {
-                    context.lineTo(
-                        Math.cos((j * 4 / 5 + 0.5) * Math.PI * 2) * p.radius,
-                        Math.sin((j * 4 / 5 + 0.5) * Math.PI * 2) * p.radius
-                    );
-                    context.lineTo(
-                        Math.cos((j * 4 / 5 + 0.7) * Math.PI * 2) * (p.radius / 2),
-                        Math.sin((j * 4 / 5 + 0.7) * Math.PI * 2) * (p.radius / 2)
-                    );
-                }
-            }
-            
-            context.fill();
-            context.restore();
-            
-            // Mover partículas
-            p.x += p.velocity.x;
-            p.y += p.velocity.y;
-            p.velocity.y += gravity;
-            
-            // Se a partícula sair do canvas, reiniciá-la
-            if (p.y > height) {
-                particles[i] = {
-                    x: Math.random() * width,
-                    y: -20,
-                    radius: p.radius,
-                    density: p.density,
-                    color: p.color,
-                    rotation: Math.random() * 360,
-                    velocity: { x: Math.random() * 6 - 3, y: Math.random() * 2 + 2 }
-                };
-            }
-        }
-        
-        if (confettiRunning) {
-            confettiAnimation = requestAnimationFrame(draw);
-        }
-    }
-    
-    // Iniciar animação
-    draw();
-}
-
-function stopConfetti() {
-    confettiRunning = false;
-    cancelAnimationFrame(confettiAnimation);
-    const context = canvas.getContext('2d');
-    context.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// THREE.js para efeitos de fundo (neve e decorações)
-let scene, camera, renderer, stars = [];
-
-function initThreeJS() {
-    // Configurar a cena
-    scene = new THREE.Scene();
-    
-    // Configurar a câmera
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 20;
-    
-    // Configurar o renderizador
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0); // fundo transparente
-    
-    // Adicionar o renderizador ao container
-    document.querySelector('.canvas-container').appendChild(renderer.domElement);
-    
-    // Adicionar neve
-    addSnow();
-    
-    // Iniciar a animação
-    animate();
-    
-    // Redimensionar quando a janela for redimensionada
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-}
-
-function addSnow() {
-    // Geometria para as partículas de neve
-    const geometry = new THREE.BufferGeometry();
-    const vertices = [];
-    
-    // Criar 1000 partículas de neve aleatórias
-    for (let i = 0; i < 1000; i++) {
-        // Posicionar partículas aleatoriamente no espaço
-        const x = (Math.random() - 0.5) * 100;
-        const y = (Math.random() - 0.5) * 100;
-        const z = (Math.random() - 0.5) * 100;
-        
-        vertices.push(x, y, z);
-    }
-    
-    // Adicionar os vértices à geometria
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    
-    // Material para as partículas de neve
-    const material = new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.2,
-        transparent: true,
-        opacity: 0.8,
-        map: createSnowTexture(),
-    });
-    
-    // Criar as partículas
-    const particles = new THREE.Points(geometry, material);
-    scene.add(particles);
-    
-    // Salvar para animação
-    stars.push(particles);
-}
-
-function createSnowTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    
-    const context = canvas.getContext('2d');
-    
-    // Criar um gradiente radial para a partícula de neve
-    const gradient = context.createRadialGradient(
-        canvas.width / 2, canvas.height / 2, 0,
-        canvas.width / 2, canvas.height / 2, canvas.width / 2
-    );
-    
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
-    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    
-    return texture;
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    
-    // Animar a neve
-    for (let i = 0; i < stars.length; i++) {
-        const positions = stars[i].geometry.attributes.position.array;
-        
-        for (let j = 0; j < positions.length; j += 3) {
-            // Mover a neve para baixo e um pouco para os lados
-            positions[j + 1] -= 0.05; // Velocidade vertical
-            positions[j] += Math.sin(Date.now() * 0.001 + j) * 0.01; // Movimento lateral suave
-            
-            // Se a partícula saiu da tela, reposicioná-la
-            if (positions[j + 1] < -50) {
-                positions[j + 1] = 50;
-            }
-        }
-        
-        stars[i].geometry.attributes.position.needsUpdate = true;
-        stars[i].rotation.y += 0.0005;
-    }
-    
-    renderer.render(scene, camera);
-}
-
-// Criar estrelas decorativas
-function createStars() {
-    const container = document.querySelector('.main-content');
-    
-    for (let i = 0; i < 50; i++) {
-        const star = document.createElement('div');
-        star.classList.add('star');
-        
-        // Posicionar aleatoriamente dentro do container
-        star.style.left = Math.random() * 100 + '%';
-        star.style.top = Math.random() * 100 + '%';
-        
-        // Atrasar a animação para criar efeito
-        star.style.animationDelay = (Math.random() * 5) + 's';
-        
-        container.appendChild(star);
-    }
-}
