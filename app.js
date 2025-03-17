@@ -12,7 +12,7 @@ const copyLinkButton = document.getElementById('copyLinkButton');
 const showQRButton = document.getElementById('showQRButton');
 const qrContainer = document.getElementById('qrContainer');
 const toast = document.getElementById('toast');
-const confettiCanvas = document.getElementById('confetti-canvas');
+const fireworksCanvas = document.getElementById('fireworks-canvas');
 const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
 const photoInputContainer = document.querySelector('.photo-preview');
@@ -21,6 +21,7 @@ const photoInputContainer = document.querySelector('.photo-preview');
 let participants = [];
 let drawResults = {};
 let currentPhoto = null;
+let fireworksActive = false;
 
 // Inicialização
 function init() {
@@ -206,36 +207,10 @@ function drawNames() {
         return drawNames();
     }
     
-    // Habilita o clique nos nomes para ver os resultados
-    enableClickOnNames();
+    // Mostra automaticamente o resultado para o primeiro participante
+    showResultFor(participants[0].id);
     
-    showToast('Sorteio realizado! Clique nos nomes para ver os resultados');
-}
-
-// Habilita o clique nos nomes para exibir os resultados
-function enableClickOnNames() {
-    const nameItems = document.querySelectorAll('.name-item');
-    
-    nameItems.forEach((item) => {
-        // Obtém o ID do participante (encontra o elemento pai li e pega o data-id)
-        const li = item.closest('li');
-        const trashIcon = li.querySelector('.trash-icon');
-        const participantId = trashIcon.getAttribute('data-id');
-        
-        // Adiciona o evento de clique ao nome
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', function() {
-            showResultFor(participantId);
-        });
-        
-        // Também adiciona o evento ao li para maior área de clique
-        li.addEventListener('click', function(e) {
-            // Evita disparar o evento quando clicar no ícone de lixeira
-            if (!e.target.classList.contains('trash-icon')) {
-                showResultFor(participantId);
-            }
-        });
-    });
+    showToast('Sorteio realizado! O resultado está sendo exibido');
 }
 
 // Mostra o resultado para um participante específico
@@ -259,15 +234,15 @@ function showResultFor(participantId) {
         // Cria o QR code
         generateQRCode(participantId);
         
-        // Adiciona confetti
-        startConfetti();
+        // Inicia os fogos de artifício
+        startFireworks();
     }
 }
 
 // Esconde a seção de resultados
 function hideResults() {
     resultSection.classList.remove('show');
-    stopConfetti();
+    stopFireworks();
     qrContainer.classList.add('hidden');
 }
 
@@ -296,7 +271,7 @@ function checkForSharedResult() {
                 
                 // Mostra o resultado
                 resultSection.classList.add('show');
-                startConfetti();
+                startFireworks();
             }
         } catch (error) {
             console.error('Erro ao decodificar dados compartilhados:', error);
@@ -399,92 +374,135 @@ function shakeElement(element) {
     }, 500);
 }
 
-// Efeito de confetti para celebrar o sorteio
-function startConfetti() {
-    const canvas = confettiCanvas;
+// Efeito de fogos de artifício
+function startFireworks() {
+    const canvas = fireworksCanvas;
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    const confettiCount = 300;
-    const confetti = [];
+    const fireworks = [];
+    const maxFireworks = 8;
+    const maxSparks = 80;
     
-    // Inicializa os confetes
-    for (let i = 0; i < confettiCount; i++) {
-        confetti.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height - canvas.height,
-            size: Math.random() * 10 + 5,
-            color: `hsl(${Math.random() * 360}, 100%, 70%)`,
-            speed: Math.random() * 3 + 2,
-            spin: Math.random() * 10 - 5,
-            direction: Math.random() * 2 - 1
-        });
+    // Inicializa os fogos de artifício
+    for (let i = 0; i < maxFireworks; i++) {
+        let firework = {
+            sparks: []
+        };
+        
+        for (let n = 0; n < maxSparks; n++) {
+            let spark = {
+                vx: Math.random() * 5 + 0.5,
+                vy: Math.random() * 5 + 0.5,
+                weight: Math.random() * 0.3 + 0.03,
+                // Cores vibrantes para os fogos
+                red: Math.floor(Math.random() * 255),
+                green: Math.floor(Math.random() * 255),
+                blue: Math.floor(Math.random() * 255)
+            };
+            
+            if (Math.random() > 0.5) spark.vx = -spark.vx;
+            if (Math.random() > 0.5) spark.vy = -spark.vy;
+            firework.sparks.push(spark);
+        }
+        
+        fireworks.push(firework);
+        resetFirework(firework);
     }
     
-    // Padrões de cores para os confetes
-    const colors = [
-        '#BA55D3', // Roxo
-        '#9370DB', // Roxo médio
-        '#8A2BE2', // Roxo azulado
-        '#FF69B4', // Rosa
-        '#FFD700', // Dourado
-        '#00BFFF', // Azul céu
-        '#FF6347', // Vermelho tomate
-        '#40E0D0'  // Turquesa
-    ];
+    function resetFirework(firework) {
+        firework.x = Math.floor(Math.random() * canvas.width);
+        firework.y = canvas.height;
+        firework.age = 0;
+        firework.phase = 'fly';
+    }
     
-    function updateConfetti() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function animateFireworks() {
+        // Limpa o canvas com um pouco de transparência para criar efeito de rastro
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        for (let i = 0; i < confetti.length; i++) {
-            const c = confetti[i];
-            
-            c.y += c.speed;
-            c.x += Math.sin(c.direction) * 2;
-            
-            if (c.y > canvas.height) {
-                c.y = -10;
-                c.x = Math.random() * canvas.width;
-            }
-            
-            ctx.beginPath();
-            ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-            
-            // Formas aleatórias: círculos, quadrados ou retângulos
-            const shape = Math.floor(Math.random() * 3);
-            
-            if (shape === 0) {
-                // Círculo
-                ctx.arc(c.x, c.y, c.size / 2, 0, Math.PI * 2);
-            } else if (shape === 1) {
-                // Quadrado
-                ctx.fillRect(c.x, c.y, c.size, c.size);
+        fireworks.forEach((firework, index) => {
+            if (firework.phase === 'explode') {
+                firework.sparks.forEach((spark) => {
+                    for (let i = 0; i < 5; i++) {
+                        let trailAge = firework.age + i;
+                        let x = firework.x + spark.vx * trailAge;
+                        let y = firework.y + spark.vy * trailAge + spark.weight * trailAge * spark.weight * trailAge;
+                        let fade = i * 15 - firework.age * 1.5;
+                        
+                        if (fade > 0) {
+                            let r = Math.floor(spark.red * fade);
+                            let g = Math.floor(spark.green * fade);
+                            let b = Math.floor(spark.blue * fade);
+                            
+                            ctx.beginPath();
+                            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${fade / 15})`;
+                            
+                            // Varia entre formatos para cada partícula
+                            const shape = Math.floor(Math.random() * 3);
+                            if (shape === 0) {
+                                // Círculo
+                                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+                            } else if (shape === 1) {
+                                // Quadrado
+                                ctx.fillRect(x, y, 3, 3);
+                            } else {
+                                // Linha
+                                ctx.fillRect(x, y, 4, 1);
+                            }
+                            
+                            ctx.fill();
+                        }
+                    }
+                });
+                
+                firework.age++;
+                
+                // Reseta o foguete após certo tempo
+                if (firework.age > 80 && Math.random() < 0.05) {
+                    resetFirework(firework);
+                }
             } else {
-                // Retângulo/tira de papel
-                ctx.fillRect(c.x, c.y, c.size / 3, c.size);
+                // Fase de voo do foguete
+                firework.y = firework.y - 10;
+                
+                // Rastro do foguete
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(255, ${150 + Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)}, ${1 - i * 0.2})`;
+                    ctx.arc(
+                        firework.x + Math.random() * 2 - 1, 
+                        firework.y + i * 5, 
+                        2, 
+                        0, 
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+                
+                // Explode quando chega a certa altura ou aleatoriamente
+                if (Math.random() < 0.005 || firework.y < canvas.height * 0.3) {
+                    firework.phase = 'explode';
+                }
             }
-            
-            ctx.closePath();
-            ctx.fill();
-        }
+        });
         
-        if (confettiActive) {
-            requestAnimationFrame(updateConfetti);
+        if (fireworksActive) {
+            requestAnimationFrame(animateFireworks);
         }
     }
     
-    confettiActive = true;
-    updateConfetti();
+    // Inicia a animação
+    fireworksActive = true;
+    animateFireworks();
 }
 
-// Parar o confetti
-function stopConfetti() {
-    confettiActive = false;
+// Parar os fogos de artifício
+function stopFireworks() {
+    fireworksActive = false;
 }
-
-// Variável para controlar o estado do confetti
-let confettiActive = false;
 
 // Setup da neve com Three.js
 function setupSnow() {
