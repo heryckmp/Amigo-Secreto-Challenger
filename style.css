@@ -669,6 +669,120 @@ body {
     z-index: 1000;
 }
 
+/* Estilos para a seção de compartilhamento */
+.share-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--glass-border);
+    text-align: center;
+}
+
+.share-section h3 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    color: var(--color-text);
+}
+
+.share-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.share-button {
+    padding: 10px 15px;
+    min-width: 130px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
+}
+
+.share-button:hover {
+    background: var(--color-button-hover);
+    transform: translateY(-3px);
+}
+
+/* QR Code container */
+.qr-container {
+    max-width: 200px;
+    margin: 0 auto 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+.qr-container.hidden {
+    display: none;
+}
+
+.qr-container.show {
+    animation: scaleIn 0.4s forwards;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#qrcode {
+    width: 100%;
+    height: auto;
+}
+
+#qrcode img {
+    width: 100%;
+    height: auto;
+}
+
+.qr-hint {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Toast notification for copy success */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-accent);
+    color: white;
+    padding: 12px 25px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.toast-notification.show {
+    opacity: 1;
+    animation: fadeInUp 0.3s, fadeOutDown 0.3s 2s forwards;
+}
+
+@keyframes fadeOutDown {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+}
+
 /* Animações adicionais para elementos que entram na viewport */
 @keyframes fadeIn {
     from { opacity: 0; }
@@ -805,5 +919,18 @@ body {
     .decoration-element.square {
         width: 80px;
         height: 80px;
+    }
+    
+    .share-options {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .share-button {
+        width: 100%;
+    }
+    
+    .qr-container {
+        max-width: 160px;
     }
 }
