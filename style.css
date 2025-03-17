@@ -606,7 +606,7 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 100;
-    background: rgba(19, 17, 26, 0.7); /* Background com o mesmo tom de preto-roxo */
+    background: rgba(19, 17, 26, 0.25); /* Background muito mais transparente para mostrar a animação */
     opacity: 0;
     visibility: hidden;
     transition: all 0.4s ease;
@@ -620,9 +620,9 @@ body {
 .result-content {
     width: 90%;
     max-width: 500px;
-    background: rgba(30, 25, 49, 0.9); /* Tom preto-roxo mais transparente */
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    background: rgba(30, 25, 49, 0.85); /* Tom mais transparente para ver a animação e fogos */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: var(--border-radius-lg);
     padding: 40px;
@@ -732,7 +732,7 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 1000;
+    z-index: 10; /* Z-index modificado para ficar atrás da janela de resultado mas na frente do background */
     display: block;
 }
 
