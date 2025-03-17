@@ -239,11 +239,33 @@ function showResultFor(participantId) {
     }
 }
 
-// Esconde a seção de resultados
+// Esconde a seção de resultados e limpa os fogos de artifício
 function hideResults() {
+    // Remove a classe de exibição do resultado
     resultSection.classList.remove('show');
+    
+    // Para a animação dos fogos
     stopFireworks();
+    
+    // Limpa o canvas dos fogos completamente para evitar que continue sendo exibido
+    const ctx = fireworksCanvas.getContext('2d');
+    ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+    
+    // Esconde o canvas dos fogos para garantir que não apareça mais
+    fireworksCanvas.style.display = 'none';
+    
+    // Esconde o container de QR code
     qrContainer.classList.add('hidden');
+    
+    // Habilita novamente o botão de sorteio se houver participantes suficientes
+    if (participants.length >= 3) {
+        drawButton.disabled = false;
+    }
+    
+    // Pequeno delay e então exibe uma mensagem informando que pode realizar um novo sorteio
+    setTimeout(() => {
+        showToast('Você pode realizar um novo sorteio quando quiser!');
+    }, 500);
 }
 
 // Verifica se há um resultado compartilhado via URL
@@ -271,6 +293,11 @@ function checkForSharedResult() {
                 
                 // Mostra o resultado
                 resultSection.classList.add('show');
+                
+                // Exibe o canvas de fogos antes de iniciar
+                fireworksCanvas.style.display = 'block';
+                
+                // Inicia os fogos de artifício
                 startFireworks();
             }
         } catch (error) {
@@ -376,6 +403,9 @@ function shakeElement(element) {
 
 // Efeito de fogos de artifício
 function startFireworks() {
+    // Exibe o canvas de fogos (pode ter sido escondido depois de fechar)
+    fireworksCanvas.style.display = 'block';
+    
     // Ajustando o tamanho do canvas para cobrir toda a tela
     const canvas = fireworksCanvas;
     const ctx = canvas.getContext('2d');
@@ -460,6 +490,11 @@ function startFireworks() {
     }
     
     function animateFireworks() {
+        // Verifica se a animação ainda deve continuar
+        if (!fireworksActive) {
+            return;
+        }
+        
         // Limpa o canvas com um pouco de transparência para criar efeito de rastro
         ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -536,6 +571,7 @@ function startFireworks() {
             }
         });
         
+        // Continua a animação apenas se ainda estiver ativa
         if (fireworksActive) {
             requestAnimationFrame(animateFireworks);
         }
