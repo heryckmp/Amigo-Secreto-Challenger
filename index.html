@@ -16,6 +16,9 @@
     
     <!-- Estilos para Animation.css -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <!-- QRCode.js para geração de códigos QR -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 </head>
 <body>
     <!-- Background Animado -->
@@ -89,6 +92,28 @@
                     <div class="avatar-circle"></div>
                 </div>
                 <div id="friend-name" class="friend-name"></div>
+            </div>
+            
+            <!-- Nova seção de compartilhamento -->
+            <div class="share-section">
+                <h3>Compartilhar este resultado:</h3>
+                <div class="share-options">
+                    <button id="copy-link-button" class="glass-button share-button">
+                        <div class="button-inner">
+                            <span class="button-text">Copiar Link</span>
+                        </div>
+                    </button>
+                    <button id="show-qr-button" class="glass-button share-button">
+                        <div class="button-inner">
+                            <span class="button-text">Código QR</span>
+                        </div>
+                    </button>
+                </div>
+                <!-- QR Code container -->
+                <div id="qr-container" class="qr-container hidden">
+                    <div id="qrcode"></div>
+                    <p class="qr-hint">Escaneie para compartilhar</p>
+                </div>
             </div>
             
             <button id="close-result" class="glass-button close-button">
