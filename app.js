@@ -137,7 +137,11 @@ function init() {
     closeButton.addEventListener('click', closeResultModal);
     shareButton.addEventListener('click', copyLinkToClipboard);
     qrButton.addEventListener('click', toggleQRCode);
-    copyLinkBtn.addEventListener('click', copyLinkToClipboard);
+    
+    // Verificar se copyLinkBtn existe antes de adicionar evento
+    if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', copyLinkToClipboard);
+    }
     
     // Event listener para o input de foto
     photoInput.addEventListener('change', handlePhotoChange);
@@ -593,15 +597,22 @@ function generateQRCode() {
     const qrcodeElement = document.getElementById('qrcode');
     qrcodeElement.innerHTML = '';
     
-    // Gerar QR code usando o QRCode.js
-    new QRCode(qrcodeElement, {
-        text: shareUrl,
-        width: 160,
-        height: 160,
-        colorDark: "#8A2BE2",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-    });
+    // Verificar se a biblioteca QRCode está disponível
+    if (typeof QRCode !== 'undefined') {
+        // Gerar QR code usando o QRCode.js
+        new QRCode(qrcodeElement, {
+            text: shareUrl,
+            width: 160,
+            height: 160,
+            colorDark: "#8A2BE2",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    } else {
+        // Fallback para quando a biblioteca não está disponível
+        qrcodeElement.innerHTML = '<p style="color: #333;">Erro ao carregar QR Code. Por favor, use o botão "Copiar Link".</p>';
+        console.error('Biblioteca QRCode não encontrada');
+    }
 }
 
 // Inicializar
