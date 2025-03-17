@@ -2,352 +2,298 @@
 const inputName = document.getElementById('input-name');
 const addButton = document.getElementById('add-button');
 const participantsList = document.getElementById('participants-list');
-const participantsCount = document.getElementById('participants-count');
 const drawButton = document.getElementById('draw-button');
-const resultList = document.getElementById('result-list');
+const participantsCount = document.getElementById('participants-count');
 const resultSection = document.getElementById('result-section');
+const resultContent = document.querySelector('.result-content');
 const friendName = document.getElementById('friend-name');
 const closeResultButton = document.getElementById('close-result');
-const confettiCanvas = document.getElementById('confetti-canvas');
-const snowContainer = document.getElementById('snow-container');
-const presentContainer = document.getElementById('present-container');
+const canvas = document.getElementById('confetti-canvas');
+const copyLinkButton = document.getElementById('copy-link-button');
+const showQrButton = document.getElementById('show-qr-button');
+const qrContainer = document.getElementById('qr-container');
+const qrcodeEl = document.getElementById('qrcode');
 
 // Arrays para armazenar participantes e resultados
 let participants = [];
 let results = [];
-
-// Configuração do canvas para confete
-const ctx = confettiCanvas.getContext('2d');
-let confettiActive = false;
-let confettiPieces = [];
-const colors = ['#8A2BE2', '#9370DB', '#BA55D3', '#FF69B4', '#FFD700', '#00BFFF', '#32CD32'];
-
-// Variáveis para Three.js
-let scene, camera, renderer;
-let presentModel;
-let snowSystem;
-let snowScene, snowCamera, snowRenderer;
-let clock;
-let mouse = { x: 0, y: 0 };
-
-// Tamanho original do presente (aumentado para 1.5)
-const originalPresentSize = 1.5;
+let currentResult = null; // Armazena o resultado atual para compartilhamento
 
 // Inicialização
 function init() {
-    // Verificar se existem participantes salvos no localStorage
-    const savedParticipants = localStorage.getItem('amigoSecreto_participants');
+    // Verificar se há participantes salvos no localStorage
+    const savedParticipants = localStorage.getItem('amigo-secreto-participants');
     if (savedParticipants) {
         participants = JSON.parse(savedParticipants);
         updateParticipantsList();
     }
 
-    // Configurar tamanho do canvas para confetes
-    confettiCanvas.width = window.innerWidth;
-    confettiCanvas.height = window.innerHeight;
+    // Configurar o tamanho do canvas para efeitos de confete
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     // Event listeners
     addButton.addEventListener('click', addParticipant);
-    inputName.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            addParticipant(e);
-        }
+    inputName.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addParticipant();
     });
-    drawButton.addEventListener('click', drawSecretFriends);
+    drawButton.addEventListener('click', drawNames);
     closeResultButton.addEventListener('click', closeResultModal);
-    window.addEventListener('resize', onWindowResize);
-    document.addEventListener('mousemove', onMouseMove);
-
-    // Inicializar Three.js para a neve como background
-    initSnowSystem();
     
-    // Inicializar Three.js para o presente 3D
-    initPresentModel();
+    // Event listeners para compartilhamento
+    copyLinkButton.addEventListener('click', copyShareLink);
+    showQrButton.addEventListener('click', toggleQrCode);
+
+    // Verificar se existe um resultado compartilhado na URL
+    checkSharedResult();
+
+    // Inicializar Three.js para efeitos de fundo
+    initThreeJS();
     
     // Criar estrelas decorativas
     createStars();
-    
-    // Aplicar efeitos de animação aos elementos
-    initElementAnimations();
 }
 
-// Criar estrelas no background
-function createStars() {
-    const starsContainer = document.querySelector('.background');
-    const numberOfStars = 80;
+// Verificar se existe um resultado compartilhado na URL
+function checkSharedResult() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('share');
     
-    for (let i = 0; i < numberOfStars; i++) {
-        const star = document.createElement('div');
-        star.classList.add('star');
-        
-        // Posições aleatórias
-        star.style.top = `${Math.random() * 100}%`;
-        star.style.left = `${Math.random() * 100}%`;
-        
-        // Tamanhos variados
-        const size = Math.random() * 3 + 1;
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        
-        // Atraso na animação para que não pisquem todas juntas
-        star.style.animationDelay = `${Math.random() * 5}s`;
-        
-        starsContainer.appendChild(star);
-    }
-}
-
-// Inicializar animações para elementos
-function initElementAnimations() {
-    // Obter todos os elementos com o atributo data-animation
-    const animatedElements = document.querySelectorAll('[data-animation]');
-    
-    animatedElements.forEach(element => {
-        // Aplicar classes de animação com base no tipo
-        const animationType = element.getAttribute('data-animation');
-        const delay = element.getAttribute('data-delay') || 0;
-        
-        // Inicialmente, esconder o elemento
-        element.style.opacity = '0';
-        
-        // Observar quando o elemento entra na viewport
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Atrasar a animação conforme especificado
-                    setTimeout(() => {
-                        // Remover observador após animar
-                        observer.unobserve(element);
-                        
-                        // Aplicar animação com base no tipo
-                        element.style.opacity = '1';
-                        
-                        switch (animationType) {
-                            case 'fadeIn':
-                                element.style.animation = `fadeIn 1s forwards`;
-                                break;
-                            case 'fadeUp':
-                                element.style.animation = `fadeUp 0.8s forwards`;
-                                break;
-                            case 'scale':
-                                element.style.animation = `scale 1s forwards`;
-                                break;
-                            default:
-                                element.style.animation = `fadeIn 1s forwards`;
-                        }
-                    }, delay * 1000);
+    if (sharedData) {
+        try {
+            // Decodificar os dados compartilhados de Base64
+            const decodedData = JSON.parse(atob(sharedData));
+            
+            // Verificar se os dados contêm as informações necessárias
+            if (decodedData && decodedData.giver && decodedData.receiver) {
+                // Se os participantes locais não incluem o giver, adicioná-lo
+                if (!participants.includes(decodedData.giver)) {
+                    participants.push(decodedData.giver);
+                    updateParticipantsList();
                 }
-            });
-        }, { threshold: 0.1 });
-        
-        // Começar a observar o elemento
-        observer.observe(element);
-    });
-}
-
-// Inicializar sistema de neve
-function initSnowSystem() {
-    // Criar relógio para animações
-    clock = new THREE.Clock();
-    
-    // Configurar cena para a neve
-    snowScene = new THREE.Scene();
-    
-    // Configurar câmera para a neve
-    snowCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    snowCamera.position.z = 5;
-    
-    // Configurar renderizador para a neve
-    snowRenderer = new THREE.WebGLRenderer({ 
-        alpha: true,
-        antialias: true 
-    });
-    snowRenderer.setSize(window.innerWidth, window.innerHeight);
-    snowRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    snowContainer.appendChild(snowRenderer.domElement);
-    
-    // Inicializar sistema de neve (aumentando quantidade para 12000)
-    snowSystem = new SnowSystem(snowScene, 12000);
-    
-    // Iniciar loop de animação para neve
-    animateSnow();
-}
-
-// Inicializar modelo 3D de presente
-function initPresentModel() {
-    // Configurar cena para o presente
-    scene = new THREE.Scene();
-    
-    // Configurar câmera para o presente
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
-    
-    // Configurar renderizador para o presente
-    renderer = new THREE.WebGLRenderer({ 
-        alpha: true,
-        antialias: true 
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    presentContainer.appendChild(renderer.domElement);
-    
-    // Adicionar luzes
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 10);
-    scene.add(directionalLight);
-    
-    // Criar modelo 3D de presente
-    presentModel = new PresentModel(scene, { x: 0, y: 0, z: 1 }, originalPresentSize);
-    
-    // Iniciar loop de animação para o presente
-    animatePresent();
-}
-
-// Movimento do mouse
-function onMouseMove(event) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-}
-
-// Atualizar tamanho do canvas ao redimensionar janela
-function onWindowResize() {
-    // Atualizar canvas confetti
-    confettiCanvas.width = window.innerWidth;
-    confettiCanvas.height = window.innerHeight;
-    
-    // Atualizar Three.js para neve
-    if (snowRenderer && snowCamera) {
-        snowCamera.aspect = window.innerWidth / window.innerHeight;
-        snowCamera.updateProjectionMatrix();
-        snowRenderer.setSize(window.innerWidth, window.innerHeight);
-    }
-    
-    // Atualizar Three.js para presente
-    if (renderer && camera) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-}
-
-// Loop de animação para neve
-function animateSnow() {
-    requestAnimationFrame(animateSnow);
-    
-    const time = clock ? clock.getElapsedTime() : 0;
-    
-    // Atualizar sistema de neve
-    if (snowSystem) {
-        snowSystem.update(time);
-    }
-    
-    // Renderizar cena de neve
-    if (snowRenderer && snowScene && snowCamera) {
-        snowRenderer.render(snowScene, snowCamera);
-    }
-}
-
-// Loop de animação para presente
-function animatePresent() {
-    requestAnimationFrame(animatePresent);
-    
-    const time = clock ? clock.getElapsedTime() : 0;
-    
-    // Animar modelo de presente
-    if (presentModel) {
-        presentModel.animate(time);
-        
-        // Adicionar movimento suave em resposta ao mouse
-        presentModel.present.rotation.y += mouse.x * 0.01;
-        presentModel.present.rotation.x += mouse.y * 0.01;
-    }
-    
-    // Renderizar cena do presente
-    if (renderer && scene && camera) {
-        renderer.render(scene, camera);
-    }
-}
-
-// Adicionar participante
-function addParticipant(e) {
-    e.preventDefault();
-    const name = inputName.value.trim();
-    
-    if (name === '') {
-        showMessage('Por favor, digite um nome válido.', 'error');
-        return;
-    }
-    
-    if (participants.includes(name)) {
-        showMessage('Este nome já foi adicionado.', 'error');
-        return;
-    }
-    
-    participants.push(name);
-    saveParticipants();
-    updateParticipantsList();
-    
-    inputName.value = '';
-    inputName.focus();
-    
-    showMessage(`${name} foi adicionado com sucesso!`, 'success');
-    
-    // Animar o presente 3D para "celebrar" a adição
-    if (presentModel) {
-        // Adicionar uma pequena animação de "pulo"
-        gsap.to(presentModel.present.position, {
-            y: 0.5,
-            duration: 0.3,
-            ease: 'power2.out',
-            onComplete: () => {
-                gsap.to(presentModel.present.position, {
-                    y: 0,
-                    duration: 0.5,
-                    ease: 'bounce.out'
-                });
+                
+                // Mostrar o resultado compartilhado
+                showSharedResult(decodedData);
             }
-        });
+        } catch (error) {
+            console.error('Erro ao processar dados compartilhados:', error);
+        }
     }
 }
 
-// Salvar participantes no localStorage
-function saveParticipants() {
-    localStorage.setItem('amigoSecreto_participants', JSON.stringify(participants));
+// Mostrar resultado compartilhado
+function showSharedResult(data) {
+    // Atualizar o modal com o nome do amigo
+    friendName.innerHTML = data.receiver;
+    
+    // Mostrar o modal de resultado
+    resultSection.classList.add('show');
+    
+    // Iniciar a animação de confete
+    startConfetti();
+    
+    // Adicionar animação de fade-in para o nome do amigo
+    setTimeout(() => {
+        friendName.style.opacity = '0';
+        friendName.style.animation = 'none';
+        void friendName.offsetWidth; // Forçar reflow
+        friendName.style.opacity = '';
+        friendName.style.animation = '';
+    }, 100);
 }
 
-// Atualizar lista de participantes na interface
+// Gerar link de compartilhamento
+function generateShareLink(result) {
+    // Converter o resultado para uma string Base64
+    const resultData = {
+        giver: result.giver,
+        receiver: result.receiver
+    };
+    
+    const base64Data = btoa(JSON.stringify(resultData));
+    
+    // Construir a URL com o parâmetro de compartilhamento
+    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${base64Data}`;
+    
+    return shareUrl;
+}
+
+// Copiar link de compartilhamento
+function copyShareLink() {
+    if (!currentResult) return;
+    
+    const shareLink = generateShareLink(currentResult);
+    
+    // Usar a API moderna de clipboard se disponível
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareLink)
+            .then(() => {
+                showToast('Link copiado com sucesso!');
+            })
+            .catch(err => {
+                console.error('Erro ao copiar link:', err);
+                fallbackCopyTextToClipboard(shareLink);
+            });
+    } else {
+        fallbackCopyTextToClipboard(shareLink);
+    }
+}
+
+// Método alternativo para copiar para a área de transferência
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    
+    // Tornar o textarea invisível
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showToast('Link copiado com sucesso!');
+        } else {
+            showToast('Não foi possível copiar o link');
+        }
+    } catch (err) {
+        console.error('Erro ao copiar texto:', err);
+        showToast('Não foi possível copiar o link');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Alternar exibição do QR Code
+function toggleQrCode() {
+    if (!currentResult) return;
+    
+    if (qrContainer.classList.contains('hidden')) {
+        // Limpar QR code anterior
+        qrcodeEl.innerHTML = '';
+        
+        // Gerar link para compartilhamento
+        const shareLink = generateShareLink(currentResult);
+        
+        // Criar o QR Code
+        new QRCode(qrcodeEl, {
+            text: shareLink,
+            width: 170,
+            height: 170,
+            colorDark: "#8A2BE2",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        // Mostrar o container
+        qrContainer.classList.remove('hidden');
+        qrContainer.classList.add('show');
+    } else {
+        // Esconder o container
+        qrContainer.classList.add('hidden');
+        qrContainer.classList.remove('show');
+    }
+}
+
+// Exibir mensagem toast
+function showToast(message) {
+    // Remover toast existente se houver
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        document.body.removeChild(existingToast);
+    }
+    
+    // Criar elemento toast
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = message;
+    
+    // Adicionar ao corpo do documento
+    document.body.appendChild(toast);
+    
+    // Mostrar com animação
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Remover após alguns segundos
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                document.body.removeChild(toast);
+            }
+        }, 300);
+    }, 2500);
+}
+
+// Função para adicionar participante
+function addParticipant() {
+    const name = inputName.value.trim();
+    if (name) {
+        // Verificar se o nome já existe na lista
+        if (participants.includes(name)) {
+            alert('Este nome já está na lista!');
+            return;
+        }
+        
+        participants.push(name);
+        updateParticipantsList();
+        localStorage.setItem('amigo-secreto-participants', JSON.stringify(participants));
+        inputName.value = '';
+        inputName.focus();
+        checkDrawButtonState();
+    }
+}
+
+// Atualizar lista de participantes
 function updateParticipantsList() {
     participantsList.innerHTML = '';
-    participantsCount.textContent = participants.length;
-    
     participants.forEach((participant, index) => {
-        const li = document.createElement('li');
-        
-        // Aplicar atributo de animação para entrada gradual
-        li.setAttribute('data-animation', 'fadeUp');
-        li.setAttribute('data-delay', (index * 0.1).toString());
+        const listItem = document.createElement('li');
         
         const nameSpan = document.createElement('span');
         nameSpan.textContent = participant;
-        nameSpan.classList.add('name-item');
+        nameSpan.className = 'name-item';
         
         const deleteButton = document.createElement('img');
-        deleteButton.src = 'https://cdn-icons-png.flaticon.com/512/5058/5058192.png';
+        deleteButton.src = 'https://cdn-icons-png.flaticon.com/512/3687/3687412.png';
+        deleteButton.className = 'trash-icon';
         deleteButton.alt = 'Remover';
-        deleteButton.classList.add('trash-icon');
-        deleteButton.onclick = () => removeParticipant(index);
+        deleteButton.title = 'Remover participante';
+        deleteButton.onclick = function() {
+            removeParticipant(index);
+        };
         
-        li.appendChild(nameSpan);
-        li.appendChild(deleteButton);
-        participantsList.appendChild(li);
+        listItem.appendChild(nameSpan);
+        listItem.appendChild(deleteButton);
+        participantsList.appendChild(listItem);
     });
     
-    // Inicializar animações para os novos itens
-    initElementAnimations();
-    
-    // Habilitar ou desabilitar botão de sorteio
+    participantsCount.textContent = participants.length;
+}
+
+// Remover participante
+function removeParticipant(index) {
+    participants.splice(index, 1);
+    updateParticipantsList();
+    localStorage.setItem('amigo-secreto-participants', JSON.stringify(participants));
+    checkDrawButtonState();
+}
+
+// Verificar estado do botão de sorteio
+function checkDrawButtonState() {
     if (participants.length >= 3) {
         drawButton.removeAttribute('disabled');
     } else {
@@ -355,271 +301,345 @@ function updateParticipantsList() {
     }
 }
 
-// Remover participante
-function removeParticipant(index) {
-    const removedName = participants[index];
-    participants.splice(index, 1);
-    saveParticipants();
-    updateParticipantsList();
-    showMessage(`${removedName} foi removido da lista.`, 'error');
-}
-
-// Exibir mensagens temporárias
-function showMessage(message, type) {
-    resultList.textContent = message;
-    resultList.className = 'result-list glass';
-    resultList.classList.add(type);
-    resultList.classList.remove('hidden');
+// Sortear nomes
+function drawNames() {
+    if (participants.length < 3) {
+        alert('Adicione pelo menos 3 participantes para realizar o sorteio!');
+        return;
+    }
     
-    setTimeout(() => {
-        resultList.textContent = '';
-        resultList.className = 'result-list glass hidden';
-    }, 3000);
+    // Criar cópias dos arrays para não modificar o original
+    const givers = [...participants];
+    const receivers = [...participants];
+    
+    // Limpar resultados anteriores
+    results = [];
+    
+    // Algoritmo de sorteio evitando que alguém tire a si mesmo
+    let valid = true;
+    
+    do {
+        // Reiniciar a validação
+        valid = true;
+        
+        // Embaralhar a lista de receptores
+        shuffle(receivers);
+        
+        // Verificar se alguém tirou a si mesmo
+        for (let i = 0; i < givers.length; i++) {
+            if (givers[i] === receivers[i]) {
+                valid = false;
+                break;
+            }
+        }
+    } while (!valid);
+    
+    // Criar pares de amigo secreto
+    for (let i = 0; i < givers.length; i++) {
+        results.push({
+            giver: givers[i],
+            receiver: receivers[i]
+        });
+    }
+    
+    // Mostrar resultados
+    showResults();
 }
 
 // Embaralhar array (algoritmo Fisher-Yates)
 function shuffle(array) {
-    let currentIndex = array.length;
-    let temporaryValue, randomIndex;
-    
-    // Enquanto existirem elementos a embaralhar
-    while (currentIndex !== 0) {
-        // Selecionar um elemento restante
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex -= 1;
-        
-        // Trocar com o elemento atual
-        temporaryValue = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temporaryValue;
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
-    
     return array;
 }
 
-// Realizar sorteio
-function drawSecretFriends() {
-    if (participants.length < 3) {
-        showMessage('São necessários pelo menos 3 participantes para o sorteio.', 'error');
-        return;
-    }
-    
-    // Copiar array de participantes e embaralhar
-    const shuffled = [...participants];
-    shuffle(shuffled);
-    
-    // Gerar pares para o amigo secreto
-    results = [];
-    for (let i = 0; i < shuffled.length; i++) {
-        const giver = participants[i];
-        // O último participante tira o primeiro, fechando o ciclo
-        const receiver = (i === shuffled.length - 1) ? shuffled[0] : shuffled[i + 1];
-        results.push({ giver, receiver });
-    }
-    
-    // Verificar se ninguém tirou a si mesmo
-    const invalidDraw = results.some(pair => pair.giver === pair.receiver);
-    if (invalidDraw) {
-        drawSecretFriends(); // Refazer o sorteio
-        return;
-    }
-    
-    showMessage('Sorteio realizado com sucesso! Clique nos nomes para ver quem tirou quem.', 'success');
-    showResults();
-    
-    // Animar o modelo 3D para "celebrar" o sorteio
-    if (presentModel) {
-        // Animação especial para o sorteio - aumentar e depois voltar ao tamanho original
-        const celebrationScale = originalPresentSize * 3;  // Tamanho temporário para celebração
-        
-        // Sequência de animação usando GSAP Timeline
-        const tl = gsap.timeline();
-        
-        // Primeiro aumenta
-        tl.to(presentModel.present.scale, {
-            x: celebrationScale, 
-            y: celebrationScale, 
-            z: celebrationScale,
-            duration: 0.5,
-            ease: 'power2.out'
-        })
-        // Depois volta ao tamanho original com efeito elástico
-        .to(presentModel.present.scale, {
-            x: originalPresentSize, 
-            y: originalPresentSize, 
-            z: originalPresentSize,
-            duration: 0.8,
-            ease: 'elastic.out(1, 0.3)'
-        });
-        
-        // Aumentar a velocidade de rotação temporariamente
-        gsap.to(presentModel.present.rotation, {
-            y: presentModel.present.rotation.y + Math.PI * 4,
-            duration: 2,
-            ease: 'power1.inOut'
-        });
-    }
-}
-
-// Mostrar resultados do sorteio
+// Mostrar resultados
 function showResults() {
-    // Para um demo, vamos mostrar um resultado aleatório
+    // Selecionar um resultado aleatório para mostrar
     const randomIndex = Math.floor(Math.random() * results.length);
-    const randomResult = results[randomIndex];
+    const result = results[randomIndex];
     
-    // Mostrar o nome do amigo sorteado na modal
-    friendName.textContent = randomResult.receiver;
+    // Salvar o resultado atual para compartilhamento
+    currentResult = result;
     
-    // Mostrar o modal com efeito de fade
+    // Atualizar o modal com o nome do amigo
+    friendName.innerHTML = result.receiver;
+    
+    // Mostrar o modal de resultado
     resultSection.classList.add('show');
     
-    // Iniciar animação de confete
+    // Iniciar a animação de confete
     startConfetti();
     
-    // Aplicar animação ao nome
-    friendName.style.animation = 'none';
-    void friendName.offsetWidth; // Reiniciar animação
-    friendName.style.animation = 'fadeInUp 0.8s forwards';
+    // Adicionar animação de fade-in para o nome do amigo
+    setTimeout(() => {
+        friendName.style.opacity = '0';
+        friendName.style.animation = 'none';
+        void friendName.offsetWidth; // Forçar reflow
+        friendName.style.opacity = '';
+        friendName.style.animation = '';
+    }, 100);
 }
 
-// Fechar modal de resultados
+// Fechar modal de resultado
 function closeResultModal() {
     resultSection.classList.remove('show');
     stopConfetti();
+    
+    // Esconder QR code se estiver visível
+    if (!qrContainer.classList.contains('hidden')) {
+        qrContainer.classList.add('hidden');
+        qrContainer.classList.remove('show');
+    }
 }
 
-// Iniciar animação de confete
+// Inicializar a aplicação
+window.addEventListener('DOMContentLoaded', init);
+
+// Ajustar o tamanho do canvas quando a janela for redimensionada
+window.addEventListener('resize', function() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+// Animação de Confete
+let confettiRunning = false;
+let confettiAnimation;
+
 function startConfetti() {
-    confettiActive = true;
-    confettiPieces = [];
+    if (confettiRunning) return;
+    confettiRunning = true;
     
-    // Criar peças de confete
-    for (let i = 0; i < 150; i++) {
-        confettiPieces.push({
-            x: Math.random() * confettiCanvas.width,
-            y: Math.random() * -confettiCanvas.height,
-            size: Math.random() * 10 + 5,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            rotation: Math.random() * 360,
-            speed: Math.random() * 3 + 2,
-            rotationSpeed: Math.random() * 5 - 2.5,
-            oscillationSpeed: Math.random() * 2 + 1,
-            oscillationDistance: Math.random() * 5 + 5,
-            shape: Math.random() < 0.5 ? 'circle' : 'square',
-            initialX: 0
+    const context = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const particles = [];
+    const particleCount = 150;
+    const gravity = 0.5;
+    
+    // Criar partículas
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * width, // x-coordenada
+            y: Math.random() * height - height, // y-coordenada (começando acima do canvas)
+            radius: Math.random() * 5 + 5, // tamanho
+            density: Math.random() * particleCount, // densidade / velocidade
+            color: `hsl(${Math.random() * 360}, 90%, 65%)`, // cor
+            rotation: Math.random() * 360, // rotação
+            velocity: { x: Math.random() * 6 - 3, y: Math.random() * 2 + 2 } // velocidade
         });
-        
-        confettiPieces[i].initialX = confettiPieces[i].x;
     }
     
-    animateConfetti();
-}
-
-// Parar animação de confete
-function stopConfetti() {
-    confettiActive = false;
-    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-}
-
-// Animar confete
-function animateConfetti() {
-    if (!confettiActive) return;
-    
-    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-    
-    confettiPieces.forEach(piece => {
-        ctx.save();
+    // Função de animação
+    function draw() {
+        context.clearRect(0, 0, width, height);
         
-        // Movimento e oscilação
-        piece.y += piece.speed;
-        piece.x = piece.initialX + Math.sin(piece.y * 0.01) * piece.oscillationDistance;
-        piece.rotation += piece.rotationSpeed;
-        
-        // Desenhar peça de confete com efeito 3D (rotação)
-        ctx.translate(piece.x, piece.y);
-        ctx.rotate(piece.rotation * Math.PI / 180);
-        
-        // Aplicar efeito de sombra para profundidade 3D
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-        ctx.shadowBlur = 5;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-        
-        // Desenhar formas diferentes
-        ctx.fillStyle = piece.color;
-        if (piece.shape === 'circle') {
-            ctx.beginPath();
-            ctx.arc(0, 0, piece.size / 2, 0, Math.PI * 2);
-            ctx.fill();
-        } else {
-            // Quadrado com perspectiva
-            ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size);
+        for (let i = 0; i < particleCount; i++) {
+            const p = particles[i];
+            context.save();
+            context.translate(p.x, p.y);
+            context.rotate(p.rotation * Math.PI / 180);
+            context.fillStyle = p.color;
+            context.beginPath();
             
-            // Adicionar brilho para efeito 3D
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.beginPath();
-            ctx.moveTo(-piece.size / 2, -piece.size / 2);
-            ctx.lineTo(piece.size / 2, -piece.size / 2);
-            ctx.lineTo(0, 0);
-            ctx.closePath();
-            ctx.fill();
+            // Desenhar formas aleatórias (círculos, quadrados, etc.)
+            const shapeType = i % 3;
+            
+            if (shapeType === 0) {
+                // Círculo
+                context.arc(0, 0, p.radius, 0, Math.PI * 2, true);
+            } else if (shapeType === 1) {
+                // Quadrado
+                context.rect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
+            } else {
+                // Estrela
+                for (let j = 0; j < 5; j++) {
+                    context.lineTo(
+                        Math.cos((j * 4 / 5 + 0.5) * Math.PI * 2) * p.radius,
+                        Math.sin((j * 4 / 5 + 0.5) * Math.PI * 2) * p.radius
+                    );
+                    context.lineTo(
+                        Math.cos((j * 4 / 5 + 0.7) * Math.PI * 2) * (p.radius / 2),
+                        Math.sin((j * 4 / 5 + 0.7) * Math.PI * 2) * (p.radius / 2)
+                    );
+                }
+            }
+            
+            context.fill();
+            context.restore();
+            
+            // Mover partículas
+            p.x += p.velocity.x;
+            p.y += p.velocity.y;
+            p.velocity.y += gravity;
+            
+            // Se a partícula sair do canvas, reiniciá-la
+            if (p.y > height) {
+                particles[i] = {
+                    x: Math.random() * width,
+                    y: -20,
+                    radius: p.radius,
+                    density: p.density,
+                    color: p.color,
+                    rotation: Math.random() * 360,
+                    velocity: { x: Math.random() * 6 - 3, y: Math.random() * 2 + 2 }
+                };
+            }
         }
         
-        ctx.restore();
-        
-        // Reiniciar peças que saem da tela
-        if (piece.y > confettiCanvas.height) {
-            piece.y = Math.random() * -100;
-            piece.initialX = Math.random() * confettiCanvas.width;
-            piece.x = piece.initialX;
+        if (confettiRunning) {
+            confettiAnimation = requestAnimationFrame(draw);
         }
+    }
+    
+    // Iniciar animação
+    draw();
+}
+
+function stopConfetti() {
+    confettiRunning = false;
+    cancelAnimationFrame(confettiAnimation);
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// THREE.js para efeitos de fundo (neve e decorações)
+let scene, camera, renderer, stars = [];
+
+function initThreeJS() {
+    // Configurar a cena
+    scene = new THREE.Scene();
+    
+    // Configurar a câmera
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 20;
+    
+    // Configurar o renderizador
+    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0); // fundo transparente
+    
+    // Adicionar o renderizador ao container
+    document.querySelector('.canvas-container').appendChild(renderer.domElement);
+    
+    // Adicionar neve
+    addSnow();
+    
+    // Iniciar a animação
+    animate();
+    
+    // Redimensionar quando a janela for redimensionada
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+
+function addSnow() {
+    // Geometria para as partículas de neve
+    const geometry = new THREE.BufferGeometry();
+    const vertices = [];
+    
+    // Criar 1000 partículas de neve aleatórias
+    for (let i = 0; i < 1000; i++) {
+        // Posicionar partículas aleatoriamente no espaço
+        const x = (Math.random() - 0.5) * 100;
+        const y = (Math.random() - 0.5) * 100;
+        const z = (Math.random() - 0.5) * 100;
+        
+        vertices.push(x, y, z);
+    }
+    
+    // Adicionar os vértices à geometria
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    
+    // Material para as partículas de neve
+    const material = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.2,
+        transparent: true,
+        opacity: 0.8,
+        map: createSnowTexture(),
     });
     
-    requestAnimationFrame(animateConfetti);
+    // Criar as partículas
+    const particles = new THREE.Points(geometry, material);
+    scene.add(particles);
+    
+    // Salvar para animação
+    stars.push(particles);
 }
 
-// Definir animações CSS
-function setupAnimations() {
-    // Adicionar estilos de animação ao head se ainda não existem
-    if (!document.getElementById('animation-styles')) {
-        const styleEl = document.createElement('style');
-        styleEl.id = 'animation-styles';
+function createSnowTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    
+    const context = canvas.getContext('2d');
+    
+    // Criar um gradiente radial para a partícula de neve
+    const gradient = context.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 0,
+        canvas.width / 2, canvas.height / 2, canvas.width / 2
+    );
+    
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    
+    return texture;
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    // Animar a neve
+    for (let i = 0; i < stars.length; i++) {
+        const positions = stars[i].geometry.attributes.position.array;
         
-        styleEl.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
+        for (let j = 0; j < positions.length; j += 3) {
+            // Mover a neve para baixo e um pouco para os lados
+            positions[j + 1] -= 0.05; // Velocidade vertical
+            positions[j] += Math.sin(Date.now() * 0.001 + j) * 0.01; // Movimento lateral suave
             
-            @keyframes fadeUp {
-                from { 
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to { 
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+            // Se a partícula saiu da tela, reposicioná-la
+            if (positions[j + 1] < -50) {
+                positions[j + 1] = 50;
             }
-            
-            @keyframes scale {
-                from { 
-                    opacity: 0;
-                    transform: scale(0.8);
-                }
-                to { 
-                    opacity: 1;
-                    transform: scale(1);
-                }
-            }
-        `;
+        }
         
-        document.head.appendChild(styleEl);
+        stars[i].geometry.attributes.position.needsUpdate = true;
+        stars[i].rotation.y += 0.0005;
+    }
+    
+    renderer.render(scene, camera);
+}
+
+// Criar estrelas decorativas
+function createStars() {
+    const container = document.querySelector('.main-content');
+    
+    for (let i = 0; i < 50; i++) {
+        const star = document.createElement('div');
+        star.classList.add('star');
+        
+        // Posicionar aleatoriamente dentro do container
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        
+        // Atrasar a animação para criar efeito
+        star.style.animationDelay = (Math.random() * 5) + 's';
+        
+        container.appendChild(star);
     }
 }
-
-// Inicializar aplicação
-document.addEventListener('DOMContentLoaded', () => {
-    setupAnimations();
-    init();
-});
