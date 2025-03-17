@@ -41,6 +41,12 @@
             <h2 class="section-title">Adicionar Participantes</h2>
             
             <div class="input-wrapper">
+                <div class="photo-input-container">
+                    <div class="photo-preview" id="photo-preview">
+                        <label for="user-photo" class="add-photo-label">+</label>
+                    </div>
+                    <input type="file" id="user-photo" class="hidden" accept="image/*">
+                </div>
                 <input type="text" id="input-name" class="input-name" placeholder="Digite o nome do participante..." maxlength="30">
                 <button id="add-button" class="glass-button">
                     <div class="button-inner">
@@ -75,7 +81,7 @@
                 
                 <div class="friend-card">
                     <div class="friend-avatar">
-                        <div class="avatar-circle"></div>
+                        <div id="avatar-image" class="avatar-circle"></div>
                     </div>
                     <h3 id="friend-name" class="friend-name">Nome do Amigo</h3>
                 </div>
@@ -115,6 +121,19 @@
     
     <!-- Canvas para confete -->
     <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+    
+    <!-- Template para modais de edição de foto -->
+    <div id="photo-modal" class="photo-modal">
+        <div class="photo-modal-content glass">
+            <h3>Editar Foto</h3>
+            <div class="photo-edit-preview" id="photo-edit-preview"></div>
+            <div class="photo-edit-controls">
+                <button id="confirm-photo" class="glass-button">Confirmar</button>
+                <button id="remove-photo" class="glass-button remove-button">Remover</button>
+                <button id="cancel-photo" class="glass-button">Cancelar</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Scripts -->
     <script src="app.js"></script>
