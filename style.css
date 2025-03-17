@@ -91,7 +91,7 @@ body {
     opacity: 0.03;
 }
 
-/* Container para animação de neve */
+/* Container Three.js (onde a neve será renderizada) */
 .canvas-container {
     position: fixed;
     top: 0;
@@ -100,12 +100,6 @@ body {
     height: 100%;
     z-index: -1; /* Colocado acima do background mas abaixo do conteúdo */
     pointer-events: none;
-}
-
-#snow-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
 }
 
 /* Container Principal */
@@ -322,23 +316,21 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    z-index: 2;
-}
-
-/* Estilo do ícone de câmera */
-.camera-icon {
-    width: 22px;
-    height: 22px;
-    color: var(--color-text);
-    opacity: 0.7;
-    transition: var(--transition-fast);
-    position: absolute;
+    position: relative;
     z-index: 1;
 }
 
-.photo-preview:hover .camera-icon {
+.add-photo-label {
+    font-size: 24px;
+    color: var(--color-text);
+    cursor: pointer;
+    opacity: 0.7;
+    position: relative;
+    z-index: 2;
+}
+
+.photo-preview:hover .add-photo-label {
     opacity: 1;
-    color: var(--color-accent);
 }
 
 .input-name {
@@ -694,8 +686,6 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    position: relative;
-    z-index: 2;
 }
 
 @keyframes pulse {
@@ -743,7 +733,7 @@ body {
     height: 100%;
     pointer-events: none;
     z-index: 1000;
-    display: none;
+    display: block;
 }
 
 /* Estilos para a seção de compartilhamento */
