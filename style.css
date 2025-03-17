@@ -724,8 +724,8 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Confetti Canvas */
-.confetti-canvas {
+/* Canvas para fogos de artifício */
+.fireworks-canvas {
     position: fixed;
     top: 0;
     left: 0;
