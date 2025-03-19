@@ -174,79 +174,140 @@ function removeParticipant(id) {
 
 // Realiza o sorteio dos nomes
 function drawNames() {
-    if (participants.length < 3) {
-        showToast('É preciso pelo menos 3 participantes');
+    if (participants.length < 2) {
+        showToast('É preciso pelo menos 2 participantes');
         return;
     }
     
-    // Algoritmo de sorteio para garantir que ninguém tire o próprio nome
+    // Limpa resultados anteriores
     drawResults = {};
     
-    // Cria uma cópia embaralhada dos participantes para o sorteio
-    let shuffledParticipants = [...participants];
-    shuffleArray(shuffledParticipants);
+    // Escolhe um ganhador aleatório
+    const randomIndex = Math.floor(Math.random() * participants.length);
+    const winner = participants[randomIndex];
     
-    // Cria um array circular rotacionado para o sorteio
-    let secretFriends = [...shuffledParticipants];
-    secretFriends.push(secretFriends.shift()); // Move o primeiro elemento para o final, criando rotação
-    
-    // Valida se ninguém tirou a si mesmo
-    let valid = true;
-    for (let i = 0; i < shuffledParticipants.length; i++) {
-        if (shuffledParticipants[i].id === secretFriends[i].id) {
-            valid = false;
-            break;
-        }
-    }
-    
-    // Se não for válido, tenta novamente
-    if (!valid) {
-        return drawNames();
-    }
-    
-    // Registra os resultados
-    for (let i = 0; i < shuffledParticipants.length; i++) {
-        drawResults[shuffledParticipants[i].id] = secretFriends[i];
-    }
+    // Adiciona log para verificação
+    console.log('Resultado do sorteio - Ganhador:', winner.name);
     
     // Inicia os fogos de artifício antes de mostrar o resultado
     startFireworks();
     
-    // Mostra automaticamente o resultado para o primeiro participante
-    showResultFor(participants[0].id);
+    // Mostra o resultado do ganhador
+    showWinner(winner);
     
-    showToast('Sorteio realizado! O resultado está sendo exibido');
+    showToast('Sorteio realizado! O ganhador está sendo exibido');
 }
 
-// Função auxiliar para embaralhar array
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]]; // Troca os elementos
+// Mostra o ganhador do sorteio
+function showWinner(winner) {
+    // Define o nome do ganhador
+    friendName.textContent = winner.name;
+    
+    // Define a imagem do avatar, se disponível
+    if (winner.photo) {
+        friendAvatar.innerHTML = `<img src="${winner.photo}" alt="${winner.name}">`;
+    } else {
+        friendAvatar.innerHTML = ''; // Mantém apenas o círculo gradiente
     }
-    return array;
+    
+    // Altera o texto do título na seção de resultado
+    document.querySelector('.result-title').textContent = 'Ganhador do Sorteio:';
+    
+    // Mostra a seção de resultado
+    resultSection.classList.add('show');
+    
+    // Cria o QR code para compartilhar o resultado
+    generateQRCodeForWinner(winner);
 }
 
-// Mostra o resultado para um participante específico
-function showResultFor(participantId) {
-    const secretFriend = drawResults[participantId];
+// Gera e mostra o QR Code para compartilhamento do resultado
+function generateQRCodeForWinner(winner) {
+    // Compacta apenas os dados necessários
+    const shareData = {
+        winnerName: winner.name,
+        winnerPhoto: winner.photo
+    };
     
-    if (secretFriend) {
-        // Define o nome do amigo secreto
-        friendName.textContent = secretFriend.name;
+    // Codifica os dados para compartilhamento via URL
+    const encodedData = btoa(JSON.stringify(shareData));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?winner=${encodedData}`;
+    
+    // Limpa o container e gera um novo QR code
+    document.getElementById('qrcode').innerHTML = '';
+    new QRCode(document.getElementById('qrcode'), {
+        text: shareUrl,
+        width: 180,
+        height: 180,
+        colorDark: '#8A2BE2',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+    });
+}
+
+// Copia o link do resultado para a área de transferência
+function copyResultLink() {
+    const winnerName = friendName.textContent;
+    const winner = participants.find(p => p.name === winnerName);
+    
+    if (winner) {
+        // Compacta apenas os dados necessários
+        const shareData = {
+            winnerName: winner.name,
+            winnerPhoto: winner.photo
+        };
         
-        // Define a imagem do avatar, se disponível
-        if (secretFriend.photo) {
-            friendAvatar.innerHTML = `<img src="${secretFriend.photo}" alt="${secretFriend.name}">`;
-        } else {
-            friendAvatar.innerHTML = ''; // Mantém apenas o círculo gradiente
+        // Codifica os dados para compartilhamento via URL
+        const encodedData = btoa(JSON.stringify(shareData));
+        const shareUrl = `${window.location.origin}${window.location.pathname}?winner=${encodedData}`;
+        
+        // Copia para a área de transferência
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            showToast('Link copiado com sucesso!');
+        }).catch(err => {
+            console.error('Erro ao copiar:', err);
+            showToast('Não foi possível copiar o link');
+        });
+    }
+}
+
+// Verifica se há um resultado compartilhado via URL
+function checkForSharedResult() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('winner');
+    
+    if (sharedData) {
+        try {
+            const { winnerName, winnerPhoto } = JSON.parse(atob(sharedData));
+            
+            if (winnerName) {
+                // Define o título do resultado
+                document.querySelector('.result-title').textContent = 'Ganhador do Sorteio:';
+                
+                // Define o resultado compartilhado
+                document.getElementById('friendName').textContent = winnerName;
+                
+                // Define a imagem, se disponível
+                if (winnerPhoto) {
+                    friendAvatar.innerHTML = `<img src="${winnerPhoto}" alt="${winnerName}">`;
+                } else {
+                    friendAvatar.innerHTML = '';
+                }
+                
+                // Esconde os botões de compartilhamento
+                document.querySelector('.share-section').style.display = 'none';
+                
+                // Mostra o resultado
+                resultSection.classList.add('show');
+                
+                // Exibe o canvas de fogos antes de iniciar
+                fireworksCanvas.style.display = 'block';
+                
+                // Inicia os fogos de artifício
+                startFireworks();
+            }
+        } catch (error) {
+            console.error('Erro ao decodificar dados compartilhados:', error);
         }
-        
-        // Mostra a seção de resultado
-        resultSection.classList.add('show');
-        
-        // Cria o QR code
-        generateQRCode(participantId);
     }
 }
 
@@ -279,113 +340,13 @@ function hideResults() {
     }, 500);
 }
 
-// Verifica se há um resultado compartilhado via URL
-function checkForSharedResult() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedData = urlParams.get('share');
-    
-    if (sharedData) {
-        try {
-            const { personId, personName, friendName, friendPhoto } = JSON.parse(atob(sharedData));
-            
-            if (personName && friendName) {
-                // Define o resultado compartilhado
-                document.getElementById('friendName').textContent = friendName;
-                
-                // Define a imagem, se disponível
-                if (friendPhoto) {
-                    friendAvatar.innerHTML = `<img src="${friendPhoto}" alt="${friendName}">`;
-                } else {
-                    friendAvatar.innerHTML = '';
-                }
-                
-                // Esconde os botões de compartilhamento
-                document.querySelector('.share-section').style.display = 'none';
-                
-                // Mostra o resultado
-                resultSection.classList.add('show');
-                
-                // Exibe o canvas de fogos antes de iniciar
-                fireworksCanvas.style.display = 'block';
-                
-                // Inicia os fogos de artifício
-                startFireworks();
-            }
-        } catch (error) {
-            console.error('Erro ao decodificar dados compartilhados:', error);
-        }
+// Função auxiliar para embaralhar array
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]]; // Troca os elementos
     }
-}
-
-// Copia o link do resultado para a área de transferência
-function copyResultLink() {
-    const selectedPersonId = getSelectedPersonId();
-    
-    if (selectedPersonId) {
-        const person = participants.find(p => p.id === selectedPersonId);
-        const friend = drawResults[selectedPersonId];
-        
-        // Compacta apenas os dados necessários
-        const shareData = {
-            personId: selectedPersonId,
-            personName: person.name,
-            friendName: friend.name,
-            friendPhoto: friend.photo
-        };
-        
-        // Codifica os dados para compartilhamento via URL
-        const encodedData = btoa(JSON.stringify(shareData));
-        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
-        
-        // Copia para a área de transferência
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            showToast('Link copiado com sucesso!');
-        }).catch(err => {
-            console.error('Erro ao copiar:', err);
-            showToast('Não foi possível copiar o link');
-        });
-    }
-}
-
-// Obtém o ID do participante selecionado
-function getSelectedPersonId() {
-    const friendNameText = friendName.textContent;
-    // Encontra quem tirou esta pessoa
-    for (const [personId, friend] of Object.entries(drawResults)) {
-        if (friend.name === friendNameText) {
-            return personId;
-        }
-    }
-    return null;
-}
-
-// Gera e mostra o QR Code para compartilhamento
-function generateQRCode(participantId) {
-    const person = participants.find(p => p.id === participantId);
-    const friend = drawResults[participantId];
-    
-    // Compacta apenas os dados necessários
-    const shareData = {
-        personId: participantId,
-        personName: person.name,
-        friendName: friend.name,
-        friendPhoto: friend.photo
-    };
-    
-    // Codifica os dados para compartilhamento via URL
-    const encodedData = btoa(JSON.stringify(shareData));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
-    
-    // Limpa o container e gera um novo QR code
-    document.getElementById('qrcode').innerHTML = '';
-    new QRCode(document.getElementById('qrcode'), {
-        text: shareUrl,
-        width: 180,
-        height: 180,
-        colorDark: '#8A2BE2',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
-    });
+    return array;
 }
 
 // Alterna a visibilidade do QR Code
