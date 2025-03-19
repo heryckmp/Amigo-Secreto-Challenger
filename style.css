@@ -62,10 +62,33 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(125deg, #13111A, #1E1931, #2A1E54, #13111A);
+    background: linear-gradient(
+        135deg,
+        #0B1026 0%,    /* Azul muito escuro */
+        #1B1E3D 20%,   /* Azul escuro com tom roxo */
+        #2A2356 40%,   /* Roxo escuro */
+        #1B1E3D 60%,   /* Azul escuro com tom roxo */
+        #0B1026 80%,   /* Azul muito escuro */
+        #090E1F 100%   /* Quase preto com tom azulado */
+    );
     background-size: 400% 400%;
-    animation: gradientBG 20s ease infinite;
-    opacity: 0.85; /* Diminuído para que a neve seja mais visível */
+    animation: gradientBG 15s ease infinite;
+    opacity: 0.95;
+}
+
+.bg-animation::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 30%),
+        radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 30%);
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 @keyframes gradientBG {
@@ -80,18 +103,7 @@ body {
     }
 }
 
-.bg-animation::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill-opacity="0.1" fill="white" x="0" y="0" width="100" height="1" /></svg>');
-    opacity: 0.03;
-}
-
-/* Container Three.js (onde a neve será renderizada) */
+/* Ajuste na opacidade do container de canvas para melhor visibilidade da neve */
 .canvas-container {
     position: fixed;
     top: 0;
@@ -100,6 +112,7 @@ body {
     height: 100%;
     z-index: -1; /* Colocado acima do background mas abaixo do conteúdo */
     pointer-events: none;
+    opacity: 0.85;
 }
 
 /* Container Principal */

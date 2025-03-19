@@ -614,19 +614,19 @@ function setupSnow() {
     document.querySelector('.canvas-container').appendChild(renderer.domElement);
     
     // Cria os flocos de neve
-    const snowflakeCount = 1000;
+    const snowflakeCount = 1500; // Aumentado o número de flocos
     const snowflakeGeometry = new THREE.BufferGeometry();
     const snowflakePositions = [];
     const snowflakeSizes = [];
     
     for (let i = 0; i < snowflakeCount; i++) {
         snowflakePositions.push(
-            (Math.random() - 0.5) * 50, // x
-            (Math.random() - 0.5) * 50, // y
-            (Math.random() - 0.5) * 50  // z
+            (Math.random() - 0.5) * 60, // x - Aumentado o range
+            (Math.random() - 0.5) * 60, // y - Aumentado o range
+            (Math.random() - 0.5) * 60  // z - Aumentado o range
         );
         
-        snowflakeSizes.push(Math.random() * 5 + 1);
+        snowflakeSizes.push(Math.random() * 4 + 0.5); // Ajustado o tamanho dos flocos
     }
     
     snowflakeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(snowflakePositions, 3));
@@ -635,9 +635,9 @@ function setupSnow() {
     // Material para os flocos de neve
     const snowflakeMaterial = new THREE.PointsMaterial({ 
         color: 0xFFFFFF,
-        size: 0.5,
+        size: 0.4,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.9,
         map: createSnowflakeTexture(),
         depthWrite: false
     });
@@ -647,7 +647,7 @@ function setupSnow() {
     scene.add(snowflakes);
     
     // Posiciona a câmera
-    camera.position.z = 20;
+    camera.position.z = 25;
     
     // Função para animar a neve
     function animateSnow() {
@@ -658,15 +658,15 @@ function setupSnow() {
         
         for (let i = 0; i < positions.length; i += 3) {
             // Move para baixo
-            positions[i + 1] -= 0.05 * (snowflakeSizes[i / 3] / 2);
+            positions[i + 1] -= 0.03 * (snowflakeSizes[i / 3] / 2);
             
-            // Move levemente para os lados
-            positions[i] += Math.sin(Date.now() * 0.001 + i) * 0.01;
+            // Move levemente para os lados com movimento mais suave
+            positions[i] += Math.sin(Date.now() * 0.0005 + i) * 0.02;
             
             // Resetar quando atingir o limite inferior
-            if (positions[i + 1] < -25) {
-                positions[i + 1] = 25;
-                positions[i] = (Math.random() - 0.5) * 50;
+            if (positions[i + 1] < -30) {
+                positions[i + 1] = 30;
+                positions[i] = (Math.random() - 0.5) * 60;
             }
         }
         
