@@ -587,7 +587,7 @@ function stopFireworks() {
     fireworksActive = false;
 }
 
-// Função para inicializar o sistema de neve utilizando a classe SnowSystem
+// Setup da neve com Three.js
 function setupSnow() {
     // Cria a cena
     const scene = new THREE.Scene();
@@ -602,17 +602,65 @@ function setupSnow() {
     renderer.setClearColor(0x000000, 0);
     document.querySelector('.canvas-container').appendChild(renderer.domElement);
     
-    // Usa a classe SnowSystem do arquivo snow-system.js
-    const snowSystem = new SnowSystem(scene, 1000);
+    // Cria os flocos de neve
+    const snowflakeCount = 1000;
+    const snowflakeGeometry = new THREE.BufferGeometry();
+    const snowflakePositions = [];
+    const snowflakeSizes = [];
+    
+    for (let i = 0; i < snowflakeCount; i++) {
+        snowflakePositions.push(
+            (Math.random() - 0.5) * 50, // x
+            (Math.random() - 0.5) * 50, // y
+            (Math.random() - 0.5) * 50  // z
+        );
+        
+        snowflakeSizes.push(Math.random() * 5 + 1);
+    }
+    
+    snowflakeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(snowflakePositions, 3));
+    snowflakeGeometry.setAttribute('size', new THREE.Float32BufferAttribute(snowflakeSizes, 1));
+    
+    // Material para os flocos de neve
+    const snowflakeMaterial = new THREE.PointsMaterial({ 
+        color: 0xFFFFFF,
+        size: 0.5,
+        transparent: true,
+        opacity: 0.8,
+        map: createSnowflakeTexture(),
+        depthWrite: false
+    });
+    
+    // Cria os pontos
+    const snowflakes = new THREE.Points(snowflakeGeometry, snowflakeMaterial);
+    scene.add(snowflakes);
     
     // Posiciona a câmera
     camera.position.z = 20;
     
-    // Função para animar
-    function animate(time) {
-        requestAnimationFrame(animate);
-        // Atualiza o sistema de neve
-        snowSystem.update(time * 0.001); // Converte para segundos
+    // Função para animar a neve
+    function animateSnow() {
+        requestAnimationFrame(animateSnow);
+        
+        // Atualiza a posição dos flocos de neve
+        const positions = snowflakeGeometry.attributes.position.array;
+        
+        for (let i = 0; i < positions.length; i += 3) {
+            // Move para baixo
+            positions[i + 1] -= 0.05 * (snowflakeSizes[i / 3] / 2);
+            
+            // Move levemente para os lados
+            positions[i] += Math.sin(Date.now() * 0.001 + i) * 0.01;
+            
+            // Resetar quando atingir o limite inferior
+            if (positions[i + 1] < -25) {
+                positions[i + 1] = 25;
+                positions[i] = (Math.random() - 0.5) * 50;
+            }
+        }
+        
+        snowflakeGeometry.attributes.position.needsUpdate = true;
+        
         // Renderiza a cena
         renderer.render(scene, camera);
     }
@@ -631,7 +679,7 @@ function setupSnow() {
     });
     
     // Inicia a animação
-    animate(0); // Começar com tempo zero
+    animateSnow();
 }
 
 // Cria uma textura para os flocos de neve
