@@ -180,30 +180,33 @@ function drawNames() {
     }
     
     // Algoritmo de sorteio para garantir que ninguém tire o próprio nome
-    let available = [...participants];
     drawResults = {};
     
-    for (let i = 0; i < participants.length; i++) {
-        const currentPerson = participants[i];
-        let validChoices = available.filter(p => p.id !== currentPerson.id);
-        
-        // Se não houver escolhas válidas, recomeça o sorteio
-        if (validChoices.length === 0) {
-            return drawNames();
+    // Cria uma cópia embaralhada dos participantes para o sorteio
+    let shuffledParticipants = [...participants];
+    shuffleArray(shuffledParticipants);
+    
+    // Cria um array circular rotacionado para o sorteio
+    let secretFriends = [...shuffledParticipants];
+    secretFriends.push(secretFriends.shift()); // Move o primeiro elemento para o final, criando rotação
+    
+    // Valida se ninguém tirou a si mesmo
+    let valid = true;
+    for (let i = 0; i < shuffledParticipants.length; i++) {
+        if (shuffledParticipants[i].id === secretFriends[i].id) {
+            valid = false;
+            break;
         }
-        
-        // Escolhe aleatoriamente um amigo secreto para a pessoa atual
-        const randomIndex = Math.floor(Math.random() * validChoices.length);
-        const secretFriend = validChoices[randomIndex];
-        
-        // Registra o resultado e remove o amigo sorteado das opções disponíveis
-        drawResults[currentPerson.id] = secretFriend;
-        available = available.filter(p => p.id !== secretFriend.id);
     }
     
-    // Verifica se alguém ficou sem amigo secreto
-    if (Object.keys(drawResults).length !== participants.length) {
+    // Se não for válido, tenta novamente
+    if (!valid) {
         return drawNames();
+    }
+    
+    // Registra os resultados
+    for (let i = 0; i < shuffledParticipants.length; i++) {
+        drawResults[shuffledParticipants[i].id] = secretFriends[i];
     }
     
     // Inicia os fogos de artifício antes de mostrar o resultado
@@ -213,6 +216,15 @@ function drawNames() {
     showResultFor(participants[0].id);
     
     showToast('Sorteio realizado! O resultado está sendo exibido');
+}
+
+// Função auxiliar para embaralhar array
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]]; // Troca os elementos
+    }
+    return array;
 }
 
 // Mostra o resultado para um participante específico
