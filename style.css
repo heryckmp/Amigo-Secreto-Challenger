@@ -24,6 +24,7 @@
     --color-button: rgba(138, 43, 226, 0.8);
     --color-button-hover: rgba(186, 85, 211, 0.9);
     --color-button-active: rgba(211, 110, 255, 1);
+    --color-delete: rgba(255, 69, 58, 0.8); /* Cor para botão de excluir */
     
     /* Tamanhos */
     --border-radius-lg: 24px;
@@ -125,7 +126,7 @@ body {
     flex-direction: column;
     gap: 30px;
     position: relative;
-    z-index: 1;
+    z-index: 10; /* Ajustado para ficar acima do efeito de distorção */
 }
 
 /* Efeito de Glassmorphism - ajustado para ser mais transparente e mostrar a neve */
@@ -189,9 +190,10 @@ body {
 }
 
 /* Elementos decorativos */
-/* Removido o estilo de bolinhas do decoration-stars */
-.decoration-stars {
-    display: none; /* Escondendo completamente o elemento */
+/* Esconder os elementos decorativos de círculo e triângulo para remover os desenhos de fundo */
+.decoration-element.circle,
+.decoration-element.triangle {
+    display: none;
 }
 
 .decoration-element {
@@ -199,26 +201,6 @@ body {
     z-index: -1;
     opacity: 0.15;
     filter: blur(2px);
-}
-
-.decoration-element.circle {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, var(--color-primary), var(--color-accent));
-    top: 30%;
-    right: -50px;
-}
-
-.decoration-element.triangle {
-    width: 0;
-    height: 0;
-    border-left: 100px solid transparent;
-    border-right: 100px solid transparent;
-    border-bottom: 170px solid var(--color-secondary);
-    bottom: 20%;
-    left: -80px;
-    transform: rotate(-20deg);
 }
 
 .decoration-element.square {
@@ -575,24 +557,55 @@ body {
     font-weight: 500;
 }
 
-.trash-icon {
-    cursor: pointer;
-    width: auto;
-    height: auto;
-    opacity: 0.7;
-    transition: var(--transition-fast);
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 20px;
+/* Estilos para o botão de excluir */
+.delete-button {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    background-color: transparent;
+    transition: all 0.3s ease;
 }
 
-.trash-icon:hover {
+.delete-button:hover {
+    background-color: var(--color-delete);
+}
+
+.trash-icon {
+    width: 22px;
+    height: 22px;
+    filter: invert(1);
+    opacity: 0.7;
+    transition: var(--transition-fast);
+}
+
+.delete-button:hover .trash-icon {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.15);
+}
+
+/* Tooltip para o botão de excluir */
+.delete-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    bottom: -30px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.delete-button:hover .delete-tooltip {
+    opacity: 1;
+    visibility: visible;
+    bottom: -25px;
 }
 
 /* Resultado */
@@ -1019,4 +1032,16 @@ body {
     .qr-container {
         max-width: 160px;
     }
+}
+
+/* Container para o efeito de distorção do mouse */
+.distortion-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5; /* Acima do background e canvas, mas abaixo do conteúdo principal */
+    pointer-events: none; /* Permite que os cliques passem através do efeito */
+    isolation: isolate; /* Cria um novo contexto de empilhamento para o canvas do efeito */
 }

@@ -16,17 +16,22 @@ const fireworksCanvas = document.getElementById('fireworks-canvas');
 const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
 const photoInputContainer = document.querySelector('.photo-preview');
+const distortionContainer = document.querySelector('.distortion-container');
 
 // Variáveis para armazenar participantes e resultados do sorteio
 let participants = [];
 let drawResults = {};
 let currentPhoto = null;
 let fireworksActive = false;
+let distortionEffect = null;
 
 // Inicialização
 function init() {
     // Limpar dados do localStorage ao iniciar
     localStorage.removeItem('participants');
+    
+    // Inicializa o efeito de distorção do mouse
+    initDistortionEffect();
     
     // Apenas configura os event listeners
     addButton.addEventListener('click', addParticipant);
@@ -50,6 +55,18 @@ function init() {
     
     // Verifica se há um resultado para mostrar (vindo de um link compartilhado)
     checkForSharedResult();
+}
+
+// Inicializa o efeito de distorção
+function initDistortionEffect() {
+    // Verifica se o container existe e se o THREE já está carregado
+    if (distortionContainer && typeof THREE !== 'undefined') {
+        // Cria a instância do efeito de distorção
+        distortionEffect = new DistortionEffect(distortionContainer);
+        console.log('Efeito de distorção inicializado');
+    } else {
+        console.warn('Não foi possível inicializar o efeito de distorção');
+    }
 }
 
 // Função para lidar com a mudança de foto
@@ -559,132 +576,40 @@ function stopFireworks() {
     fireworksActive = false;
 }
 
-// Setup da neve com Three.js
-function setupSnow() {
-    // Cria a cena
+// Substitua a implementação da função initSnowSystem
+function initSnowSystem() {
+    // Obter o container do canvas
+    const canvasContainer = document.querySelector('.canvas-container');
+    const width = canvasContainer.clientWidth;
+    const height = canvasContainer.clientHeight;
+    
+    // Criar a cena, câmera e renderizador
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    camera.position.z = 5;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    // Limpar qualquer conteúdo antigo e adicionar o canvas
+    canvasContainer.innerHTML = '';
+    canvasContainer.appendChild(renderer.domElement);
     
-    // Configura o renderer
-    const renderer = new THREE.WebGLRenderer({ 
-        alpha: true,
-        antialias: true
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
-    document.querySelector('.canvas-container').appendChild(renderer.domElement);
+    // Adicionar iluminação
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(0, 5, 5);
+    scene.add(directionalLight);
     
-    // Cria os flocos de neve
-    const snowflakeCount = 1500; // Aumentado o número de flocos
-    const snowflakeGeometry = new THREE.BufferGeometry();
-    const snowflakePositions = [];
-    const snowflakeSizes = [];
+    // Instanciar o PresentModel para o background
+    const presentModel = new PresentModel(scene, { x: 0, y: 0, z: 0 }, 2);
     
-    for (let i = 0; i < snowflakeCount; i++) {
-        snowflakePositions.push(
-            (Math.random() - 0.5) * 60, // x - Aumentado o range
-            (Math.random() - 0.5) * 60, // y - Aumentado o range
-            (Math.random() - 0.5) * 60  // z - Aumentado o range
-        );
-        
-        snowflakeSizes.push(Math.random() * 4 + 0.5); // Ajustado o tamanho dos flocos
-    }
-    
-    snowflakeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(snowflakePositions, 3));
-    snowflakeGeometry.setAttribute('size', new THREE.Float32BufferAttribute(snowflakeSizes, 1));
-    
-    // Material para os flocos de neve
-    const snowflakeMaterial = new THREE.PointsMaterial({ 
-        color: 0xFFFFFF,
-        size: 0.4,
-        transparent: true,
-        opacity: 0.9,
-        map: createSnowflakeTexture(),
-        depthWrite: false
-    });
-    
-    // Cria os pontos
-    const snowflakes = new THREE.Points(snowflakeGeometry, snowflakeMaterial);
-    scene.add(snowflakes);
-    
-    // Posiciona a câmera
-    camera.position.z = 25;
-    
-    // Função para animar a neve
-    function animateSnow() {
-        requestAnimationFrame(animateSnow);
-        
-        // Atualiza a posição dos flocos de neve
-        const positions = snowflakeGeometry.attributes.position.array;
-        
-        for (let i = 0; i < positions.length; i += 3) {
-            // Move para baixo
-            positions[i + 1] -= 0.03 * (snowflakeSizes[i / 3] / 2);
-            
-            // Move levemente para os lados com movimento mais suave
-            positions[i] += Math.sin(Date.now() * 0.0005 + i) * 0.02;
-            
-            // Resetar quando atingir o limite inferior
-            if (positions[i + 1] < -30) {
-                positions[i + 1] = 30;
-                positions[i] = (Math.random() - 0.5) * 60;
-            }
-        }
-        
-        snowflakeGeometry.attributes.position.needsUpdate = true;
-        
-        // Renderiza a cena
+    // Função de animação
+    function animate() {
+        requestAnimationFrame(animate);
+        presentModel.animate(Date.now() * 0.001);
         renderer.render(scene, camera);
     }
-    
-    // Redimensiona o canvas quando a janela for redimensionada
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        
-        // Também redimensiona o canvas de fogos de artifício se existir
-        if (fireworksCanvas) {
-            fireworksCanvas.width = window.innerWidth;
-            fireworksCanvas.height = window.innerHeight;
-        }
-    });
-    
-    // Inicia a animação
-    animateSnow();
-}
-
-// Cria uma textura para os flocos de neve
-function createSnowflakeTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    const context = canvas.getContext('2d');
-    
-    // Fundo transparente
-    context.fillStyle = 'rgba(0, 0, 0, 0)';
-    context.fillRect(0, 0, 32, 32);
-    
-    // Desenha o floco de neve
-    context.fillStyle = 'white';
-    context.beginPath();
-    context.arc(16, 16, 7, 0, Math.PI * 2, false);
-    context.fill();
-    
-    // Adiciona um brilho
-    const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 8);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-    gradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.2)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    context.fillStyle = gradient;
-    context.beginPath();
-    context.arc(16, 16, 8, 0, Math.PI * 2, false);
-    context.fill();
-    
-    // Cria a textura
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    return texture;
+    animate();
 }
 
 // Inicia a aplicação
