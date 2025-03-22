@@ -104,16 +104,32 @@ body {
     }
 }
 
-/* Ajuste na opacidade do container de canvas para melhor visibilidade da neve */
+/* Canvas container para Three.js */
 .canvas-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: -1; /* Colocado acima do background mas abaixo do conteúdo */
-    pointer-events: none;
-    opacity: 0.85;
+    z-index: -1;
+    overflow: hidden;
+}
+
+/* Flowmap Canvas */
+.flowmap-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+/* Hiding decoration elements since we now use flowmap */
+.decoration-element.circle,
+.decoration-element.triangle,
+.decoration-element.square {
+    display: none;
 }
 
 /* Container Principal */
@@ -126,7 +142,7 @@ body {
     flex-direction: column;
     gap: 30px;
     position: relative;
-    z-index: 10; /* Ajustado para ficar acima do efeito de distorção */
+    z-index: 1;
 }
 
 /* Efeito de Glassmorphism - ajustado para ser mais transparente e mostrar a neve */
@@ -190,12 +206,6 @@ body {
 }
 
 /* Elementos decorativos */
-/* Esconder os elementos decorativos de círculo e triângulo para remover os desenhos de fundo */
-.decoration-element.circle,
-.decoration-element.triangle {
-    display: none;
-}
-
 .decoration-element {
     position: absolute;
     z-index: -1;
@@ -1032,16 +1042,4 @@ body {
     .qr-container {
         max-width: 160px;
     }
-}
-
-/* Container para o efeito de distorção do mouse */
-.distortion-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 5; /* Acima do background e canvas, mas abaixo do conteúdo principal */
-    pointer-events: none; /* Permite que os cliques passem através do efeito */
-    isolation: isolate; /* Cria um novo contexto de empilhamento para o canvas do efeito */
 }

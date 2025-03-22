@@ -16,22 +16,18 @@ const fireworksCanvas = document.getElementById('fireworks-canvas');
 const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
 const photoInputContainer = document.querySelector('.photo-preview');
-const distortionContainer = document.querySelector('.distortion-container');
 
 // Variáveis para armazenar participantes e resultados do sorteio
 let participants = [];
 let drawResults = {};
 let currentPhoto = null;
 let fireworksActive = false;
-let distortionEffect = null;
+let flowmapEffect = null;
 
 // Inicialização
 function init() {
     // Limpar dados do localStorage ao iniciar
     localStorage.removeItem('participants');
-    
-    // Inicializa o efeito de distorção do mouse
-    initDistortionEffect();
     
     // Apenas configura os event listeners
     addButton.addEventListener('click', addParticipant);
@@ -55,18 +51,6 @@ function init() {
     
     // Verifica se há um resultado para mostrar (vindo de um link compartilhado)
     checkForSharedResult();
-}
-
-// Inicializa o efeito de distorção
-function initDistortionEffect() {
-    // Verifica se o container existe e se o THREE já está carregado
-    if (distortionContainer && typeof THREE !== 'undefined') {
-        // Cria a instância do efeito de distorção
-        distortionEffect = new DistortionEffect(distortionContainer);
-        console.log('Efeito de distorção inicializado');
-    } else {
-        console.warn('Não foi possível inicializar o efeito de distorção');
-    }
 }
 
 // Função para lidar com a mudança de foto
@@ -576,44 +560,18 @@ function stopFireworks() {
     fireworksActive = false;
 }
 
-// Substitua a implementação da função initSnowSystem
-function initSnowSystem() {
-    // Obter o container do canvas
-    const canvasContainer = document.querySelector('.canvas-container');
-    const width = canvasContainer.clientWidth;
-    const height = canvasContainer.clientHeight;
-    
-    // Criar a cena, câmera e renderizador
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.z = 5;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    // Limpar qualquer conteúdo antigo e adicionar o canvas
-    canvasContainer.innerHTML = '';
-    canvasContainer.appendChild(renderer.domElement);
-    
-    // Adicionar iluminação
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(0, 5, 5);
-    scene.add(directionalLight);
-    
-    // Instanciar o PresentModel para o background
-    const presentModel = new PresentModel(scene, { x: 0, y: 0, z: 0 }, 2);
-    
-    // Função de animação
-    function animate() {
-        requestAnimationFrame(animate);
-        presentModel.animate(Date.now() * 0.001);
-        renderer.render(scene, camera);
-    }
-    animate();
+// Substitua a função setupSnow pelo novo setupBackground
+function setupBackground() {
+    // Initialize flowmap effect
+    flowmapEffect = new FlowmapEffect('.canvas-container', {
+        imageUrl: 'assets/background.jpg',
+        imageSize: [1250, 833], // match the background image size
+        intensity: 0.15
+    });
 }
 
 // Inicia a aplicação
 document.addEventListener('DOMContentLoaded', function() {
     init();
-    setupSnow();
+    setupBackground();
 });
