@@ -160,18 +160,18 @@ class DistortionEffect {
                 float dist = distance(uv, mousePos);
                 
                 // Efeito de destaque ao redor do cursor
-                float hoverRadius = 0.15; // Raio do efeito
+                float hoverRadius = 0.08; // Raio do efeito reduzido de 0.15 para 0.08
                 float hoverIntensity = smoothstep(hoverRadius, 0.0, dist) * 0.35;
                 
                 // Calcula a força da distorção baseada na distância
-                float strength = 0.20 / (dist + 0.05);
-                strength = clamp(strength, 0.0, 0.8);
+                float strength = 0.15 / (dist + 0.05);
+                strength = clamp(strength, 0.0, 0.6);
                 
                 // Aplica a distorção com base na velocidade do mouse
-                vec2 distortion = uVelocity * strength * 0.008;
+                vec2 distortion = uVelocity * strength * 0.006;
                 
-                // Limita a distorção a uma área ao redor do cursor
-                distortion *= smoothstep(0.4, 0.0, dist);
+                // Limita a distorção a uma área ao redor do cursor - área reduzida de 0.4 para 0.2
+                distortion *= smoothstep(0.2, 0.0, dist);
                 
                 // Aplica a distorção à coordenada uv
                 vec2 distortedUV = uv - distortion;
@@ -249,9 +249,9 @@ class DistortionEffect {
     animate() {
         requestAnimationFrame(this.animate.bind(this));
         
-        // Amortece a velocidade para um efeito suave
-        this.velocity.x *= 0.92;
-        this.velocity.y *= 0.92;
+        // Amortece a velocidade para um efeito mais responsivo (menos persistente)
+        this.velocity.x *= 0.85;
+        this.velocity.y *= 0.85;
         
         // Atualiza uniforms do shader
         this.material.uniforms.uMouse.value.set(this.mouse.x, this.height - this.mouse.y);
