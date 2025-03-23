@@ -564,6 +564,14 @@ function stopFireworks() {
 function setupBackground() {
     console.log('Setting up background with flowmap effect');
     
+    // Check if canvas container exists
+    const container = document.querySelector('.canvas-container');
+    if (!container) {
+        console.error('Canvas container not found! Make sure .canvas-container exists in the DOM');
+        return;
+    }
+    console.log('Canvas container found:', container);
+    
     // Check if THREE is available
     if (typeof THREE === 'undefined') {
         console.error('THREE.js is not loaded!');

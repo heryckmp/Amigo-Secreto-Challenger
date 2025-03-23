@@ -5,7 +5,15 @@
 
 class FlowmapEffect {
     constructor(container, options = {}) {
+        // Log when constructor is called
+        console.log('FlowmapEffect constructor called');
+        
         this.container = typeof container === 'string' ? document.querySelector(container) : container;
+        
+        if (!this.container) {
+            console.error('Container element not found:', container);
+            return;
+        }
         
         // Default options
         this.options = Object.assign({
@@ -15,17 +23,26 @@ class FlowmapEffect {
             intensity: 0.15                    // Effect intensity
         }, options);
 
+        // Check if THREE is available
+        if (typeof THREE === 'undefined') {
+            console.error('THREE.js is not available. Make sure it is loaded before flowmap.js');
+            return;
+        }
+
         // Initialize
         this.initialize();
         this.addEventListeners();
     }
 
     initialize() {
+        console.log('Initializing FlowmapEffect');
+        
         // Create canvas
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'flowmap-canvas';
         this.container.innerHTML = '';
         this.container.appendChild(this.canvas);
+        console.log('Canvas created and appended to container');
         
         // Set up WebGL renderer
         this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
@@ -33,6 +50,7 @@ class FlowmapEffect {
             console.error('WebGL is not supported by your browser');
             return;
         }
+        console.log('WebGL context obtained');
 
         // Set up renderer properties
         this.aspect = 1;
@@ -41,6 +59,7 @@ class FlowmapEffect {
         this.dpr = window.devicePixelRatio || 1;
         
         // Load image
+        console.log('Loading image:', this.options.imageUrl);
         this.setupImage();
         
         // Set up size and start animation
@@ -50,10 +69,13 @@ class FlowmapEffect {
         }
         
         // Start animation
+        console.log('Starting animation loop');
         this.animate();
     }
 
     setupImage() {
+        console.log('Setting up image and shaders');
+        
         // Define shaders
         this.vertex = `
             attribute vec2 uv;
@@ -89,116 +111,161 @@ class FlowmapEffect {
             }
         `;
 
+        console.log('Shaders defined');
+
         // Create renderer
-        this.renderer = new THREE.WebGLRenderer({ 
-            canvas: this.canvas, 
-            alpha: true,
-            antialias: true
-        });
-        this.renderer.setPixelRatio(this.dpr);
+        try {
+            this.renderer = new THREE.WebGLRenderer({ 
+                canvas: this.canvas, 
+                alpha: true,
+                antialias: true
+            });
+            this.renderer.setPixelRatio(this.dpr);
+            console.log('WebGL Renderer created');
+        } catch (error) {
+            console.error('Error creating WebGL Renderer:', error);
+            return;
+        }
         
         // Create scene and geometry
-        this.scene = new THREE.Scene();
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        try {
+            this.scene = new THREE.Scene();
+            this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            console.log('Scene and camera created');
+        } catch (error) {
+            console.error('Error creating scene or camera:', error);
+            return;
+        }
         
         // Create flowmap
-        this.flowmap = new THREE.WebGLRenderTarget(
-            512, 512, {
-                type: this.gl.HALF_FLOAT_OES ? this.gl.HALF_FLOAT_OES : this.gl.UNSIGNED_BYTE,
-                format: THREE.RGBAFormat,
-                minFilter: THREE.LinearFilter,
-                magFilter: THREE.LinearFilter
-            }
-        );
+        try {
+            this.flowmap = new THREE.WebGLRenderTarget(
+                512, 512, {
+                    type: this.gl.HALF_FLOAT_OES ? this.gl.HALF_FLOAT_OES : this.gl.UNSIGNED_BYTE,
+                    format: THREE.RGBAFormat,
+                    minFilter: THREE.LinearFilter,
+                    magFilter: THREE.LinearFilter
+                }
+            );
+            console.log('Flowmap render target created');
+        } catch (error) {
+            console.error('Error creating flowmap:', error);
+            return;
+        }
         
         // Load texture
-        const textureLoader = new THREE.TextureLoader();
-        this.texture = textureLoader.load(this.options.imageUrl, () => {
-            this.setupMaterial();
-        });
-        this.texture.wrapS = this.texture.wrapT = THREE.ClampToEdgeWrapping;
+        try {
+            console.log('Attempting to load texture:', this.options.imageUrl);
+            const textureLoader = new THREE.TextureLoader();
+            this.texture = textureLoader.load(
+                this.options.imageUrl, 
+                () => {
+                    console.log('Texture loaded successfully');
+                    this.setupMaterial();
+                },
+                (xhr) => {
+                    console.log(`Texture loading: ${xhr.loaded / xhr.total * 100}%`);
+                },
+                (error) => {
+                    console.error('Error loading texture:', error);
+                }
+            );
+            this.texture.wrapS = this.texture.wrapT = THREE.ClampToEdgeWrapping;
+        } catch (error) {
+            console.error('Error in texture loading process:', error);
+        }
     }
 
     setupMaterial() {
-        // Create geometry
-        this.geometry = new THREE.PlaneGeometry(2, 2);
-        
-        // Set up variables for image aspect
-        const imageAspect = this.options.imageSize[1] / this.options.imageSize[0];
-        let a1, a2;
-        if (this.height / this.width < imageAspect) {
-            a1 = 1;
-            a2 = (this.height / this.width) / imageAspect;
-        } else {
-            a1 = (this.width / this.height) * imageAspect;
-            a2 = 1;
+        console.log('Setting up materials and meshes');
+        try {
+            // Create geometry
+            this.geometry = new THREE.PlaneGeometry(2, 2);
+            console.log('Plane geometry created');
+            
+            // Set up variables for image aspect
+            const imageAspect = this.options.imageSize[1] / this.options.imageSize[0];
+            let a1, a2;
+            if (this.height / this.width < imageAspect) {
+                a1 = 1;
+                a2 = (this.height / this.width) / imageAspect;
+            } else {
+                a1 = (this.width / this.height) * imageAspect;
+                a2 = 1;
+            }
+            
+            // Create shader material
+            this.material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    tWater: { value: this.texture },
+                    res: { value: new THREE.Vector4(this.width, this.height, a1, a2) },
+                    tFlow: { value: this.flowmap.texture }
+                },
+                vertexShader: this.vertex,
+                fragmentShader: this.fragment
+            });
+            console.log('Main shader material created');
+            
+            // Create mesh
+            this.mesh = new THREE.Mesh(this.geometry, this.material);
+            this.scene.add(this.mesh);
+            console.log('Main mesh added to scene');
+            
+            // Create flowmap material
+            this.flowMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uMouse: { value: this.mouse },
+                    uVelocity: { value: this.velocity },
+                    uAspect: { value: this.aspect },
+                    tMap: { value: this.flowmap.texture },
+                    uFalloff: { value: 0.5 },
+                    uAlpha: { value: 1.0 },
+                    uDissipation: { value: 0.96 }
+                },
+                vertexShader: `
+                    attribute vec2 uv;
+                    attribute vec2 position;
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = vec4(position, 0, 1);
+                    }
+                `,
+                fragmentShader: `
+                    precision highp float;
+                    uniform sampler2D tMap;
+                    uniform float uFalloff;
+                    uniform float uAlpha;
+                    uniform float uDissipation;
+                    uniform float uAspect;
+                    uniform vec2 uMouse;
+                    uniform vec2 uVelocity;
+                    varying vec2 vUv;
+                    
+                    void main() {
+                        vec2 cursor = vUv - uMouse;
+                        vec4 color = texture2D(tMap, vUv) * uDissipation;
+                        cursor.x *= uAspect;
+                        vec3 stamp = vec3(uVelocity * vec2(1, -1), 1.0 - pow(1.0 - min(1.0, length(uVelocity)), 3.0));
+                        float falloff = smoothstep(uFalloff, 0.0, length(cursor)) * uAlpha;
+                        color.rgb = mix(color.rgb, stamp, vec3(falloff));
+                        gl_FragColor = color;
+                    }
+                `,
+                transparent: true,
+                depthTest: false,
+                depthWrite: false
+            });
+            console.log('Flow shader material created');
+            
+            // Create flowmap mesh
+            this.flowMesh = new THREE.Mesh(this.geometry, this.flowMaterial);
+            console.log('Setup complete, flowmap effect ready');
+        } catch (error) {
+            console.error('Error setting up material:', error);
         }
-        
-        // Create shader material
-        this.material = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                tWater: { value: this.texture },
-                res: { value: new THREE.Vector4(this.width, this.height, a1, a2) },
-                tFlow: { value: this.flowmap.texture }
-            },
-            vertexShader: this.vertex,
-            fragmentShader: this.fragment
-        });
-        
-        // Create mesh
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.scene.add(this.mesh);
-        
-        // Create flowmap material
-        this.flowMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uMouse: { value: this.mouse },
-                uVelocity: { value: this.velocity },
-                uAspect: { value: this.aspect },
-                tMap: { value: this.flowmap.texture },
-                uFalloff: { value: 0.5 },
-                uAlpha: { value: 1.0 },
-                uDissipation: { value: 0.96 }
-            },
-            vertexShader: `
-                attribute vec2 uv;
-                attribute vec2 position;
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = vec4(position, 0, 1);
-                }
-            `,
-            fragmentShader: `
-                precision highp float;
-                uniform sampler2D tMap;
-                uniform float uFalloff;
-                uniform float uAlpha;
-                uniform float uDissipation;
-                uniform float uAspect;
-                uniform vec2 uMouse;
-                uniform vec2 uVelocity;
-                varying vec2 vUv;
-                
-                void main() {
-                    vec2 cursor = vUv - uMouse;
-                    vec4 color = texture2D(tMap, vUv) * uDissipation;
-                    cursor.x *= uAspect;
-                    vec3 stamp = vec3(uVelocity * vec2(1, -1), 1.0 - pow(1.0 - min(1.0, length(uVelocity)), 3.0));
-                    float falloff = smoothstep(uFalloff, 0.0, length(cursor)) * uAlpha;
-                    color.rgb = mix(color.rgb, stamp, vec3(falloff));
-                    gl_FragColor = color;
-                }
-            `,
-            transparent: true,
-            depthTest: false,
-            depthWrite: false
-        });
-        
-        // Create flowmap mesh
-        this.flowMesh = new THREE.Mesh(this.geometry, this.flowMaterial);
     }
 
     resize() {
