@@ -562,12 +562,26 @@ function stopFireworks() {
 
 // Substitua a função setupSnow pelo novo setupBackground
 function setupBackground() {
-    // Initialize flowmap effect
-    flowmapEffect = new FlowmapEffect('.canvas-container', {
-        imageUrl: 'assets/background.jpg',
-        imageSize: [1250, 833], // match the background image size
-        intensity: 0.15
-    });
+    console.log('Setting up background with flowmap effect');
+    
+    // Check if THREE is available
+    if (typeof THREE === 'undefined') {
+        console.error('THREE.js is not loaded!');
+        return;
+    }
+    console.log('THREE.js is available');
+    
+    try {
+        // Initialize flowmap effect
+        flowmapEffect = new FlowmapEffect('.canvas-container', {
+            imageUrl: 'assets/background.jpg',
+            imageSize: [1250, 833], // match the background image size
+            intensity: 0.15
+        });
+        console.log('Flowmap effect initialized successfully');
+    } catch (error) {
+        console.error('Error initializing flowmap effect:', error);
+    }
 }
 
 // Inicia a aplicação
