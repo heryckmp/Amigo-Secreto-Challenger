@@ -118,8 +118,22 @@
     <!-- Canvas para fogos de artifício -->
     <canvas class="fireworks-canvas" id="fireworks-canvas"></canvas>
 
+    <!-- Carregando bibliotecas e scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- THREE.js deve ser carregado antes do flowmap.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.155.0/three.min.js"></script>
+    
+    <!-- Backup de CDN alternativo caso o primeiro falhe -->
+    <script>
+        // Verificar se THREE está definido e, caso contrário, carregar de um CDN alternativo
+        if (typeof THREE === 'undefined') {
+            console.warn('THREE.js falhou ao carregar do primeiro CDN, tentando CDN alternativo...');
+            document.write('<script src="https://threejs.org/build/three.min.js"><\/script>');
+        }
+    </script>
+    
+    <!-- Nossos scripts na ordem correta -->
     <script src="present-model.js"></script>
     <script src="snow-system.js"></script>
     <script src="flowmap.js"></script>
